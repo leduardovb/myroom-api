@@ -6,6 +6,8 @@ import helmet from 'helmet';
 import http from 'http';
 import { PrismaClient } from '@prisma/client';
 import UserController from './controllers/UserController';
+import AuthenticationController from './controllers/AuthenticationController';
+import apiErrorValidator from './middlewares/apiErrorValidator';
 
 export default class SetupServer extends Server {
   private server?: http.Server;
@@ -17,6 +19,7 @@ export default class SetupServer extends Server {
   public async init(): Promise<void> {
     this.setupExpress();
     this.setupControllers();
+    this.setupErroMiddleware();
     await this.setupDatabase();
   }
 
@@ -32,7 +35,11 @@ export default class SetupServer extends Server {
   }
 
   private setupControllers(): void {
-    this.addControllers([new UserController(this.database)]);
+    this.addControllers([new UserController(this.database), new AuthenticationController(this.database)]);
+  }
+
+  private setupErroMiddleware() {
+    this.app.use(apiErrorValidator);
   }
 
   private async setupDatabase(): Promise<void> {

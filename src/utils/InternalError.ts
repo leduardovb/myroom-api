@@ -1,0 +1,7 @@
+export default class InternalError extends Error {
+  constructor(public message: string, protected code: number = 500, protected description?: string) {
+    super();
+    this.name = this.constructor.name;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
