@@ -8,8 +8,10 @@ export class DefaultSchema {
 
   static minDate = moment().subtract(100, 'years').toDate()
 
+  static id = Joi.number().integer().min(1)
   static username = Joi.string().min(5).max(60)
   static phone = Joi.string()
+    .allow(null)
     .length(11)
     .custom(
       (value, helpers) =>
@@ -29,5 +31,5 @@ export class DefaultSchema {
   public static dataSchema = (object: Joi.ObjectSchema<any>) =>
     Joi.object({
       data: object,
-    }).required()
+    })
 }

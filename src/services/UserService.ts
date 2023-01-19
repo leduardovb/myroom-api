@@ -4,6 +4,9 @@ import DomainException from '../exceptions/DomainException'
 import { hashPassword } from '../helpers/functions'
 import { UserDTO } from '../classes/dtos/UserDTO'
 import UserEntity from '../classes/entities/UserEntity'
+import { UpdateUserDTO } from '../dtos/UpdateUserDTO'
+import PayloadDTO from '../classes/dtos/PayloadDTO'
+import { Prisma, User } from '@prisma/client'
 
 export default class UserService {
   private database: PrismaClient
@@ -13,26 +16,59 @@ export default class UserService {
   }
 
   public async create(createUserDTO: CreateUserDTO) {
-    const userExistsByEmail =
-      (await this.database.user.findFirst({
-        where: { email: createUserDTO.email },
-      })) !== null
+    await this.failIfEntityExistsBy(
+      { email: createUserDTO.email },
+      'Email já cadastrado'
+    )
 
-    if (userExistsByEmail)
-      throw DomainException.entityAlreadyExists('Email já cadastrado')
-
-    const userExistsByDocument =
-      (await this.database.user.findFirst({
-        where: { document: createUserDTO.document },
-      })) !== null
-
-    if (userExistsByDocument)
-      throw DomainException.entityAlreadyExists('Documento já cadastrado')
+    await this.failIfEntityExistsBy(
+      { document: createUserDTO.document },
+      'CPF já cadastrado'
+    )
 
     const newUserEntity = UserEntity.fromDTO(createUserDTO)
     newUserEntity.password = await hashPassword(createUserDTO.password)
     const userEntity = await this.database.user.create({ data: newUserEntity })
 
     return UserDTO.fromEntity(userEntity)
+  }
+
+  public async update(paylodDTO: PayloadDTO, updateUserDTO: UpdateUserDTO) {
+    const userEntity = await this.getOrFailBy(
+      { id: paylodDTO.userId },
+      'Usuário não encontrado'
+    )
+
+    if (
+      updateUserDTO.document &&
+      updateUserDTO.document !== userEntity.document
+    )
+      await this.failIfEntityExistsBy(
+        { document: updateUserDTO.document },
+        'Documento já cadastrado'
+      )
+
+    const newUserEntity =
+      UserEntity.fromEntity(userEntity).overrideFromDTO(updateUserDTO)
+
+    const updatedUserEntity = await this.database.user.update({
+      data: newUserEntity,
+      where: { id: paylodDTO.userId },
+    })
+    return UserDTO.fromEntity(updatedUserEntity)
+  }
+
+  private async failIfEntityExistsBy(
+    where: Prisma.UserWhereInput,
+    message: string
+  ) {
+    const userExists = (await this.database.user.findFirst({ where })) !== null
+    if (userExists) throw DomainException.entityAlreadyExists(message)
+  }
+
+  private async getOrFailBy(where: Prisma.UserWhereInput, message: string) {
+    const userExists = await this.database.user.findFirst({ where })
+    if (!userExists) throw DomainException.entityNotFound(message)
+    return userExists
   }
 }

@@ -1,5 +1,6 @@
 import moment from 'moment'
 import { UserDTO } from '../dtos/UserDTO'
+import { User } from '@prisma/client'
 
 export default class UserEntity {
   id!: number
@@ -53,6 +54,37 @@ export default class UserEntity {
       dto.verified,
       dto.isActive,
       dto.createdAt
+    )
+  }
+
+  static fromEntity(entity: User) {
+    return new UserEntity(
+      entity.id,
+      entity.name,
+      entity.email,
+      entity.document,
+      entity.birthDate,
+      entity.gender,
+      entity.phone,
+      entity.password,
+      entity.verified,
+      entity.isActive,
+      entity.createdAt
+    )
+  }
+
+  public overrideFromDTO(dto: UserDTO) {
+    return new UserEntity(
+      undefined,
+      dto.name,
+      undefined,
+      dto.document,
+      dto.birthDate,
+      dto.gender,
+      dto.phone,
+      dto.password,
+      dto.verified,
+      dto.isActive
     )
   }
 }

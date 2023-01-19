@@ -17,15 +17,11 @@ export default function jwtMiddleware(
     if (!token.startsWith('Bearer '))
       throw AuthenticationException.invalidTokenFormat()
 
-    jwt.decode(token.replace(/^Bearer /, ''))
-
     const decoded = decodeToken(token.replace(/^Bearer /, ''))
 
     if (decoded) {
       const newRequest = request as any
-      newRequest.payload = {
-        id: decoded.userId,
-      }
+      newRequest.payload = decoded.payload
     } else throw AuthenticationException.invalidToken()
     next()
   } catch (error: any) {
