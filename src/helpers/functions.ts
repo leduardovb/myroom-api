@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import { Token } from '../interfaces/Token'
 import PayloadDTO from '../classes/dtos/PayloadDTO'
 
 export async function comparePasswords(
@@ -17,7 +16,7 @@ export function createToken(payload: PayloadDTO) {
 }
 
 export function decodeToken(token: string) {
-  return jwt.verify(token, process.env.AUTHENTICATION_KEY!) as Token
+  return jwt.verify(token, process.env.AUTHENTICATION_KEY!) as PayloadDTO
 }
 
 export async function hashPassword(
