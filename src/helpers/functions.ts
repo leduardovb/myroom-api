@@ -1,12 +1,19 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { Token } from '../interfaces/Token'
+import PayloadDTO from '../classes/dtos/PayloadDTO'
 
 export async function comparePasswords(
   hashedPassword: string,
   password: string
 ): Promise<boolean> {
   return bcrypt.compare(password, hashedPassword)
+}
+
+export function createToken(payload: PayloadDTO) {
+  return jwt.sign({ payload }, process.env.AUTHENTICATION_KEY!, {
+    expiresIn: '7 days',
+  })
 }
 
 export function decodeToken(token: string) {

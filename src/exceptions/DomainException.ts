@@ -31,6 +31,14 @@ export default class DomainException extends Error {
     )
   }
 
+  static entityDisabled(message: string) {
+    return new DomainException(
+      StatusCodes.UNAUTHORIZED,
+      DomainExceptionType.EntityDisabled,
+      message
+    )
+  }
+
   static invalidState(message: string) {
     return new DomainException(
       StatusCodes.BAD_REQUEST,
