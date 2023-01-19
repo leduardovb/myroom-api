@@ -15,7 +15,7 @@ model user {
   birthDate DateTime
   gender    String   @db.Char(1)
   phone     String?  @db.Char(11)
-  password  String   @db.VarChar(30)
+  password  String   @db.VarChar(100)
   verified  Boolean  @default(false)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
