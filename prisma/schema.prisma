@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model user {
   id        Int      @id @default(autoincrement())
   name      String   @db.VarChar(60)
   email     String   @db.VarChar(60)
@@ -15,7 +15,7 @@ model User {
   birthDate DateTime
   gender    String   @db.Char(1)
   phone     String?  @db.Char(11)
-  password  String   @db.VarChar(30)
+  password  String   @db.VarChar(100)
   verified  Boolean  @default(false)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())

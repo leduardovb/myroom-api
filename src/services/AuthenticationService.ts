@@ -1,25 +1,31 @@
 import { PrismaClient } from '@prisma/client';
 import { LoginDTO } from '../dtos/LoginDTO';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { Token } from '../interfaces/Token';
+import DomainException from '../exceptions/DomainException';
+import { comparePasswords } from '../helpers/functions';
 
 export default class AuthenticationService {
-  constructor(database: PrismaClient) {}
+  private database: PrismaClient;
 
-  public async login(dto: LoginDTO) {
+  constructor(database: PrismaClient) {
+    this.database = database;
+  }
+
+  public async login(loginDTO: LoginDTO) {
+    const userEntity = await this.database.user.findFirst({
+      where: { email: loginDTO.email },
+    });
+
+    if (!userEntity)
+      throw DomainException.invalidState('Senha ou email inválidos');
+
+    const isPasswordValid = await comparePasswords(
+      userEntity.password,
+      loginDTO.password
+    );
+
+    if (!isPasswordValid)
+      throw DomainException.invalidState('Senha ou email inválidos');
+
     return null;
-  }
-
-  public static async hashPassword(password: string, salt = 10): Promise<string> {
-    return bcrypt.hash(password, salt);
-  }
-
-  public static async comparePasswords(hashedPassword: string, password: string): Promise<boolean> {
-    return bcrypt.compare(password, hashedPassword);
-  }
-
-  public static decodeToken(token: string) {
-    return jwt.verify(token, process.env.AUTHENTICATION_KEY!) as Token;
   }
 }
