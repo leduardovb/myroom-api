@@ -58,6 +58,14 @@ export default class UserService {
     return UserDTO.fromEntity(updatedUserEntity)
   }
 
+  public async single(id: number) {
+    const userEntity = await this.getOrFailBy(
+      { id: id },
+      'Usuário não encontrado'
+    )
+    return UserDTO.fromEntity(userEntity)
+  }
+
   private async failIfEntityExistsBy(
     where: Prisma.UserWhereInput,
     message: string

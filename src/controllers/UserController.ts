@@ -1,13 +1,14 @@
 import {
   ClassErrorMiddleware,
   Controller,
+  Get,
   Middleware,
   Post,
   Put,
 } from '@overnightjs/core'
 import { PrismaClient } from '@prisma/client'
 import { NextFunction, Request, Response } from 'express'
-import { RequestBody } from '../interfaces/RequestBody'
+import { RequestBody, RequestPaylad } from '../interfaces/RequestBody'
 import { CreateUserDTO } from '../dtos/CreateUserDTO'
 import { CreateUserSchema } from '../joi/schemas/CreateUserSchema'
 import apiErrorValidator from '../middlewares/apiErrorValidator'
@@ -63,6 +64,29 @@ export default class UserController {
           new ResponseDTO(
             StatusCodes.OK,
             'Usuário atualizado com sucesso',
+            user
+          )
+        )
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  @Get('me')
+  @Middleware(jwtMiddleware)
+  public async me(
+    request: RequestPaylad,
+    response: Response,
+    next: NextFunction
+  ) {
+    try {
+      const user = await this.userService.single(request.payload!.userId)
+      response
+        .status(200)
+        .json(
+          new ResponseDTO(
+            StatusCodes.OK,
+            `Dados do usuário listados com sucesso`,
             user
           )
         )
