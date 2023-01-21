@@ -8,7 +8,7 @@ import {
 } from '@overnightjs/core'
 import { PrismaClient } from '@prisma/client'
 import { NextFunction, Request, Response } from 'express'
-import { RequestBody, RequestPaylad } from '../interfaces/RequestBody'
+import { RequestBody, RequestPayload } from '../interfaces/RequestBody'
 import { CreateUserDTO } from '../dtos/CreateUserDTO'
 import { CreateUserSchema } from '../joi/schemas/CreateUserSchema'
 import apiErrorValidator from '../middlewares/apiErrorValidator'
@@ -23,7 +23,9 @@ import jwtMiddleware from '../middlewares/jwtMiddleware'
 @Controller('users')
 @ClassErrorMiddleware(apiErrorValidator)
 export default class UserController {
-  constructor(database: PrismaClient, private userService: UserService) {
+  private userService: UserService
+
+  constructor(database: PrismaClient) {
     this.userService = new UserService(database)
   }
 
@@ -75,7 +77,7 @@ export default class UserController {
   @Get('me')
   @Middleware(jwtMiddleware)
   public async me(
-    request: RequestPaylad,
+    request: RequestPayload,
     response: Response,
     next: NextFunction
   ) {

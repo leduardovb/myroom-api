@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["views"]
 }
 
 datasource db {
@@ -8,15 +9,39 @@ datasource db {
 }
 
 model user {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(60)
-  email     String   @db.VarChar(60)
-  document  String   @db.Char(11)
-  birthDate DateTime
-  gender    String   @db.Char(1)
-  phone     String?  @db.Char(11)
-  password  String   @db.VarChar(100)
-  verified  Boolean  @default(false)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id                Int            @id @default(autoincrement())
+  name              String         @db.VarChar(60)
+  email             String         @db.VarChar(60)
+  document          String         @db.Char(11)
+  birthDate         DateTime
+  gender            String         @db.Char(1)
+  phone             String?        @db.Char(11)
+  password          String         @db.VarChar(100)
+  verified          Boolean        @default(false)
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  senders           userMessages[] @relation("Senders")
+  recipients        userMessages[] @relation("Recipients")
+  userChatRecipient userChats[]    @relation("UserChatRecipient")
+  userChatSender    userChats[]    @relation("UserChatSender")
+}
+
+model userMessages {
+  id          Int      @id @default(autoincrement())
+  message     String   @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  senderId    Int
+  recipientId Int
+  sender      user     @relation(name: "Senders", fields: [senderId], references: [id])
+  recipient   user     @relation(name: "Recipients", fields: [recipientId], references: [id])
+}
+
+view userChats {
+  senderId          Int
+  recipientId       Int
+  lastMessage       String
+  userChatSender    user   @relation(name: "UserChatSender", fields: [senderId], references: [id])
+  userChatRecipient user   @relation(name: "UserChatRecipient", fields: [recipientId], references: [id])
+
+  @@id([senderId, recipientId])
 }

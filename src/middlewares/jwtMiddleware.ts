@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { decodeToken } from '../helpers/functions'
 import AuthenticationException from '../exceptions/AuthenticationException'
-import jwt, { JsonWebTokenError } from 'jsonwebtoken'
 
 export default function jwtMiddleware(
   request: Request,

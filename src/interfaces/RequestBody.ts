@@ -1,10 +1,10 @@
 import PayloadDTO from '../classes/dtos/PayloadDTO'
 import { RequestDTO } from '../dtos/RequestDTO'
 
-export interface RequestBody<T> extends RequestPaylad {
+export interface RequestBody<T> extends RequestPayload {
   body: RequestDTO<T>
 }
 
-export interface RequestPaylad extends Express.Request {
+export interface RequestPayload extends Express.Request {
   payload?: PayloadDTO
 }
