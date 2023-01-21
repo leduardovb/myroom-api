@@ -10,7 +10,7 @@ import AuthenticationController from './controllers/AuthenticationController'
 import NotificationsController from './controllers/NotificationsController'
 
 export default class SetupServer extends Server {
-  private server?: http.Server
+  public httpServer!: http.Server
 
   constructor(private port = 3000, private database = new PrismaClient()) {
     super()
@@ -46,7 +46,7 @@ export default class SetupServer extends Server {
   }
 
   start() {
-    this.server = this.app.listen(this.port, () => {
+    this.httpServer = this.app.listen(this.port, () => {
       console.log(`Server listening on: http://localhost:${this.port}`)
     })
   }

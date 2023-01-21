@@ -7,3 +7,9 @@ export enum DomainExceptionType {
   InvalidArguments,
   ClientUnavaible,
 }
+
+export enum SocketNamespace {
+  CONNECTION = 'connection',
+  QUEUES = 'queues',
+  DISCONNECT = 'disconnect',
+}
