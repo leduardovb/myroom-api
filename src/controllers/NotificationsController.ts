@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client'
 import NotificationsService from '../services/NotificationsService'
 import {
   ClassErrorMiddleware,
@@ -16,10 +15,7 @@ import { ResponseDTO } from '../classes/dtos/ResponseDTO'
 @Controller('notifications')
 @ClassErrorMiddleware(apiErrorValidator)
 export default class NotificationsController {
-  private notificationsService: NotificationsService
-  constructor(database: PrismaClient) {
-    this.notificationsService = new NotificationsService(database)
-  }
+  constructor(private notificationsService: NotificationsService) {}
 
   @Get('user-chats')
   @Middleware(jwtMiddleware)

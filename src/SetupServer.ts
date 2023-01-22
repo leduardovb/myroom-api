@@ -8,9 +8,17 @@ import { PrismaClient } from '@prisma/client'
 import UserController from './controllers/UserController'
 import AuthenticationController from './controllers/AuthenticationController'
 import NotificationsController from './controllers/NotificationsController'
+import FirebaseService from './services/FirebaseService'
+import RentPlaceController from './controllers/RentPlaceController'
+import RentPlaceService from './services/RentPlaceService'
+import ViaCepService from './services/ViaCepService'
+import NotificationsService from './services/NotificationsService'
+import AuthenticationService from './services/AuthenticationService'
+import UserService from './services/UserService'
 
 export default class SetupServer extends Server {
   public httpServer!: http.Server
+  private firebaseService!: FirebaseService
 
   constructor(private port = 3000, public database = new PrismaClient()) {
     super()
@@ -18,6 +26,7 @@ export default class SetupServer extends Server {
 
   public async init(): Promise<void> {
     this.setupExpress()
+    this.setupFirebase()
     this.setupControllers()
     await this.setupDatabase()
   }
@@ -35,10 +44,21 @@ export default class SetupServer extends Server {
 
   private setupControllers(): void {
     this.addControllers([
-      new UserController(this.database),
-      new AuthenticationController(this.database),
-      new NotificationsController(this.database),
+      new UserController(new UserService(this.database)),
+      new AuthenticationController(new AuthenticationService(this.database)),
+      new NotificationsController(new NotificationsService(this.database)),
+      new RentPlaceController(
+        new RentPlaceService(
+          this.database,
+          this.firebaseService,
+          new ViaCepService()
+        )
+      ),
     ])
+  }
+
+  private setupFirebase(): void {
+    this.firebaseService = new FirebaseService().init()
   }
 
   private async setupDatabase(): Promise<void> {

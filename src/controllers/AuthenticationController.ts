@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client'
 import AuthenticationService from '../services/AuthenticationService'
 import {
   ClassErrorMiddleware,
@@ -18,11 +17,7 @@ import { StatusCodes } from 'http-status-codes'
 @Controller('authentication')
 @ClassErrorMiddleware(apiErrorValidator)
 export default class AuthenticationController {
-  private authenticationService: AuthenticationService
-
-  constructor(database: PrismaClient) {
-    this.authenticationService = new AuthenticationService(database)
-  }
+  constructor(private authenticationService: AuthenticationService) {}
 
   @Post('login')
   @Middleware(joiMiddleware(LoginSchema.schema))
