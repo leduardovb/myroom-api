@@ -6,7 +6,7 @@ async function bootstrap() {
   await server.init()
   server.start()
 
-  new SocketIo(server.httpServer).init()
+  new SocketIo(server.httpServer, server.database).init()
 }
 
 bootstrap()

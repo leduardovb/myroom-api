@@ -12,7 +12,7 @@ import NotificationsController from './controllers/NotificationsController'
 export default class SetupServer extends Server {
   public httpServer!: http.Server
 
-  constructor(private port = 3000, private database = new PrismaClient()) {
+  constructor(private port = 3000, public database = new PrismaClient()) {
     super()
   }
 

@@ -8,13 +8,18 @@ import SocketUserDTO from '../dtos/SocketUserDTO'
 import { ChatRoom } from '../interfaces/ChatRoom'
 import RoomDTO from '../dtos/RoomDTO'
 import { Message } from '../interfaces/Message'
+import NotificationsService from '../services/NotificationsService'
+import { PrismaClient } from '@prisma/client'
+import UserMessageDTO from '../dtos/UserMessageDTO'
 
 export class SocketIo extends Server {
+  private notificationsService: NotificationsService
   private connectedUserDTOs: Array<SocketUserDTO>
   private rooms: Array<RoomDTO>
 
   constructor(
-    httpServer: HtppServer<typeof IncomingMessage, typeof ServerResponse>
+    httpServer: HtppServer<typeof IncomingMessage, typeof ServerResponse>,
+    database: PrismaClient
   ) {
     super(httpServer, {
       cors: {
@@ -24,6 +29,7 @@ export class SocketIo extends Server {
     })
     this.connectedUserDTOs = new Array<SocketUserDTO>()
     this.rooms = new Array<RoomDTO>()
+    this.notificationsService = new NotificationsService(database)
   }
 
   public init(): void {
@@ -66,40 +72,48 @@ export class SocketIo extends Server {
     client.on(SocketNamespace.CONNECT_ROOM, (data: ChatRoom) => {
       if (!data?.recipientId) console.debug('Não informado o recipiente')
       else {
-        const roomName = this.getRoomName(client, data)
-        const isAlreadyCreated = this.rooms.some(
-          (room) => room.name === roomName
-        )
-
-        if (!isAlreadyCreated) this.rooms.push(new RoomDTO(roomName))
-
-        if (!client.rooms.has(roomName)) {
-          console.debug(
-            `Usuário ${client.data.userId} conectado na sala: ${roomName}`
+        if (data.recipientId !== Number(client.data.userId)) {
+          const roomName = this.getRoomName(client, data)
+          const isAlreadyCreated = this.rooms.some(
+            (room) => room.name === roomName
           )
-          client.join(roomName)
-          client.emit(SocketNamespace.CONNECTED_ROOM, roomName)
+
+          if (!isAlreadyCreated) this.rooms.push(new RoomDTO(roomName))
+
+          if (!client.rooms.has(roomName)) {
+            console.debug(
+              `Usuário ${client.data.userId} conectado na sala: ${roomName}`
+            )
+            client.join(roomName)
+            client.emit(SocketNamespace.CONNECTED_ROOM, roomName)
+          }
         }
       }
     })
   }
 
   private handleMessageToRoom(client: Socket) {
-    client.on(SocketNamespace.MESSAGE_TO_ROOM, (data: Message) => {
+    client.on(SocketNamespace.MESSAGE_TO_ROOM, async (data: Message) => {
       const room = this.rooms.find((room) => room.name === data?.roomName)
       if (room && data?.message?.trim()) {
         const userId = client.data.userId
-        const isMemberOfRoom = room.name.includes(userId.toString())
+        const isMemberOfRoom =
+          room.name.includes(userId.toString()) && client.rooms.has(room.name)
         if (isMemberOfRoom) {
-          console.debug(
-            `Usuário ${userId} mandando mensagem para sala ${room.name}`
+          const users = room.name.split('-')
+          const recipientId = users.find((user) => user !== String(userId))
+          const messageEntity = await this.notificationsService.saveMessage(
+            new UserMessageDTO(userId, Number(recipientId), data.message)
           )
-          client
-            .to(room.name)
-            .emit(SocketNamespace.MESSAGE_TO_ROOM, {
+          if (messageEntity) {
+            console.debug(
+              `Usuário ${userId} mandando mensagem para sala ${room.name}`
+            )
+            client.to(room.name).emit(SocketNamespace.MESSAGE_TO_ROOM, {
               senderId: userId,
-              message: data.message,
+              message: data.message.trim(),
             })
+          }
         }
       }
     })
@@ -114,7 +128,7 @@ export class SocketIo extends Server {
       client.data.userId > data.recipientId
         ? client.data.userId
         : data.recipientId
-    return `ROOM: ${firstId}-${secondId}`
+    return `${firstId}-${secondId}`
   }
 }
 

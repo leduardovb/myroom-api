@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import ChatDTO from '../classes/dtos/ChatDTO'
+import UserMessageDTO from '../dtos/UserMessageDTO'
 
 export default class NotificationsService {
   constructor(private database: PrismaClient) {}
@@ -31,5 +32,25 @@ export default class NotificationsService {
       chatDTOs.push(new ChatDTO(username, userChat.lastMessage))
     })
     return chatDTOs
+  }
+
+  public async saveMessage(userMessageDTO: UserMessageDTO) {
+    const senderExists =
+      this.database.user.findFirst({
+        where: { id: userMessageDTO.senderId },
+      }) !== null
+    const recipientExists =
+      this.database.user.findFirst({
+        where: { id: userMessageDTO.recipientId },
+      }) !== null
+
+    if (senderExists && recipientExists) {
+      const userMessageEntity = await this.database.userMessages.create({
+        data: userMessageDTO,
+      })
+      console.debug(`Mensagem salva com sucesso`)
+      return userMessageEntity
+    }
+    return null
   }
 }
