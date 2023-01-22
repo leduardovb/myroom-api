@@ -10,7 +10,6 @@ export class CreateUserSchema extends DefaultSchema {
       name: this.username.required(),
       phone: this.phone,
       document: this.document.required(),
-      birthDate: this.date.less(this.maxDate).required(),
       gender: this.gender.required(),
       email: this.email.required(),
       password: this.password.required(),

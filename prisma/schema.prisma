@@ -8,40 +8,86 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model user {
-  id                Int            @id @default(autoincrement())
-  name              String         @db.VarChar(60)
-  email             String         @db.VarChar(60)
-  document          String         @db.Char(11)
-  birthDate         DateTime
-  gender            String         @db.Char(1)
-  phone             String?        @db.Char(11)
-  password          String         @db.VarChar(100)
-  verified          Boolean        @default(false)
-  isActive          Boolean        @default(true)
-  createdAt         DateTime       @default(now())
-  senders           userMessages[] @relation("Senders")
-  recipients        userMessages[] @relation("Recipients")
-  userChatRecipient userChats[]    @relation("UserChatRecipient")
-  userChatSender    userChats[]    @relation("UserChatSender")
+model User {
+  id                Int           @id @default(autoincrement())
+  name              String        @db.VarChar(60)
+  email             String        @db.VarChar(60)
+  document          String        @db.Char(11)
+  gender            String        @db.Char(1)
+  phone             String?       @db.Char(11)
+  password          String        @db.VarChar(100)
+  verified          Boolean       @default(false)
+  isActive          Boolean       @default(true) @map("is_active")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  senders           UserMessage[] @relation("Senders")
+  recipients        UserMessage[] @relation("Recipients")
+  userChatRecipient UserChat[]    @relation("UserChatRecipient")
+  userChatSender    UserChat[]    @relation("UserChatSender")
+  userRentPlaces    RentPlace[]   @relation("UserRentPlaces")
+
+  @@map("users")
 }
 
-model userMessages {
+model UserMessage {
   id          Int      @id @default(autoincrement())
   message     String   @db.VarChar(255)
-  createdAt   DateTime @default(now())
-  senderId    Int
-  recipientId Int
-  sender      user     @relation(name: "Senders", fields: [senderId], references: [id])
-  recipient   user     @relation(name: "Recipients", fields: [recipientId], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+  senderId    Int      @map("sender_id")
+  recipientId Int      @map("recipient_id")
+  sender      User     @relation(name: "Senders", fields: [senderId], references: [id])
+  recipient   User     @relation(name: "Recipients", fields: [recipientId], references: [id])
+
+  @@map("user_messages")
 }
 
-view userChats {
+model RentPlace {
+  id             Int             @id @default(autoincrement())
+  name           String          @db.VarChar(60)
+  description    String?         @db.VarChar(300)
+  type           String          @db.VarChar(11)
+  roomType       String          @db.VarChar(13)
+  value          Decimal         @db.Decimal(10, 2)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  userId         Int             @map("user_id")
+  addressId      Int             @unique @map("address_id")
+  user           User            @relation(name: "UserRentPlaces", fields: [userId], references: [id])
+  address        Address         @relation(fields: [addressId], references: [id])
+  specifications Specification[] @relation("RentPlaceSpecifications")
+
+  @@map("rent_places")
+}
+
+model Specification {
+  description String    @db.VarChar(300)
+  amount      Int
+  rentPlaceId Int       @map("rent_place_id")
+  rentPlace   RentPlace @relation(name: "RentPlaceSpecifications", fields: [rentPlaceId], references: [id])
+
+  @@id([description, rentPlaceId])
+  @@map("specifications")
+}
+
+model Address {
+  id           Int        @id @default(autoincrement())
+  streetName   String     @map("street_name") @db.VarChar(60)
+  buildingCode String     @map("building_code") @db.VarChar(10)
+  complement   String?    @db.VarChar(45)
+  neighborhood String     @db.VarChar(60)
+  city         String     @db.VarChar(60)
+  state        String     @db.VarChar(2)
+  zipCode      String     @map("zip_code") @db.Char(8)
+  rentPlace    RentPlace?
+
+  @@map("addresses")
+}
+
+view UserChat {
   senderId          Int
   recipientId       Int
   lastMessage       String
-  userChatSender    user   @relation(name: "UserChatSender", fields: [senderId], references: [id])
-  userChatRecipient user   @relation(name: "UserChatRecipient", fields: [recipientId], references: [id])
+  userChatSender    User   @relation(name: "UserChatSender", fields: [senderId], references: [id])
+  userChatRecipient User   @relation(name: "UserChatRecipient", fields: [recipientId], references: [id])
 
   @@id([senderId, recipientId])
+  @@map("user_chats")
 }

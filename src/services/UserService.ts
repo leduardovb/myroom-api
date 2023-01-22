@@ -6,7 +6,7 @@ import { UserDTO } from '../classes/dtos/UserDTO'
 import UserEntity from '../classes/entities/UserEntity'
 import { UpdateUserDTO } from '../dtos/UpdateUserDTO'
 import PayloadDTO from '../classes/dtos/PayloadDTO'
-import { Prisma, User } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 
 export default class UserService {
   private database: PrismaClient

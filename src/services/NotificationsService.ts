@@ -7,7 +7,7 @@ export default class NotificationsService {
 
   public async listUserChats(userId: number) {
     const chatDTOs = new Array<ChatDTO>()
-    const userChats = await this.database.userChats.findMany({
+    const userChats = await this.database.userChat.findMany({
       include: {
         userChatSender: true,
         userChatRecipient: true,
@@ -45,7 +45,7 @@ export default class NotificationsService {
       }) !== null
 
     if (senderExists && recipientExists) {
-      const userMessageEntity = await this.database.userMessages.create({
+      const userMessageEntity = await this.database.userMessage.create({
         data: userMessageDTO,
       })
       console.debug(`Mensagem salva com sucesso`)

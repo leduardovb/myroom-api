@@ -6,7 +6,6 @@ export class UserDTO {
   name?: string
   email?: string
   document?: string
-  birthDate?: Date | string
   gender?: string
   phone?: string | null
   password?: string
@@ -19,7 +18,6 @@ export class UserDTO {
     name?: string,
     email?: string,
     document?: string,
-    birthDate?: Date,
     gender?: string,
     phone?: string | null,
     password?: string,
@@ -31,8 +29,6 @@ export class UserDTO {
     if (name !== undefined) this.name = name
     if (email !== undefined) this.email = email
     if (document !== undefined) this.document = document
-    if (birthDate !== undefined)
-      this.birthDate = moment(birthDate).format('DD/MM/YYYY')
     if (gender !== undefined) this.gender = gender
     if (phone !== undefined) this.phone = phone
     if (password !== undefined) this.password = password
@@ -47,7 +43,6 @@ export class UserDTO {
       entity.name,
       entity.email,
       entity.document,
-      entity.birthDate,
       entity.gender,
       entity.phone,
       undefined,
