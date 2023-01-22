@@ -7,7 +7,6 @@ export default class UpdateUserSchema extends DefaultSchema {
       id: this.id.required(),
       name: this.username,
       document: this.document,
-      birthDate: this.date,
       gender: this.gender,
       phone: this.phone,
     }).required()
