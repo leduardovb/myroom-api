@@ -5,10 +5,13 @@ import { ExtendedError } from 'socket.io/dist/namespace'
 import AuthenticationException from '../exceptions/AuthenticationException'
 import { decodeToken } from '../helpers/functions'
 import SocketUserDTO from '../dtos/SocketUserDTO'
-import { ChatNamespace } from './ChatNamespace'
+import { ChatRoom } from '../interfaces/ChatRoom'
+import RoomDTO from '../dtos/RoomDTO'
+import { Message } from '../interfaces/Message'
 
 export class SocketIo extends Server {
   private connectedUserDTOs: Array<SocketUserDTO>
+  private rooms: Array<RoomDTO>
 
   constructor(
     httpServer: HtppServer<typeof IncomingMessage, typeof ServerResponse>
@@ -20,6 +23,7 @@ export class SocketIo extends Server {
       },
     })
     this.connectedUserDTOs = new Array<SocketUserDTO>()
+    this.rooms = new Array<RoomDTO>()
   }
 
   public init(): void {
@@ -35,6 +39,8 @@ export class SocketIo extends Server {
     this.on(SocketNamespace.CONNECTION, (socket) => {
       this.handleConnection(socket)
       this.handleDisconnect(socket)
+      this.handleCreateChatRoom(socket)
+      this.handleMessageToRoom(socket)
     })
   }
 
@@ -54,6 +60,61 @@ export class SocketIo extends Server {
         (userDTO) => userDTO.socketId !== client.id
       )
     })
+  }
+
+  private handleCreateChatRoom(client: Socket) {
+    client.on(SocketNamespace.CONNECT_ROOM, (data: ChatRoom) => {
+      if (!data?.recipientId) console.debug('Não informado o recipiente')
+      else {
+        const roomName = this.getRoomName(client, data)
+        const isAlreadyCreated = this.rooms.some(
+          (room) => room.name === roomName
+        )
+
+        if (!isAlreadyCreated) this.rooms.push(new RoomDTO(roomName))
+
+        if (!client.rooms.has(roomName)) {
+          console.debug(
+            `Usuário ${client.data.userId} conectado na sala: ${roomName}`
+          )
+          client.join(roomName)
+          client.emit(SocketNamespace.CONNECTED_ROOM, roomName)
+        }
+      }
+    })
+  }
+
+  private handleMessageToRoom(client: Socket) {
+    client.on(SocketNamespace.MESSAGE_TO_ROOM, (data: Message) => {
+      const room = this.rooms.find((room) => room.name === data?.roomName)
+      if (room && data?.message?.trim()) {
+        const userId = client.data.userId
+        const isMemberOfRoom = room.name.includes(userId.toString())
+        if (isMemberOfRoom) {
+          console.debug(
+            `Usuário ${userId} mandando mensagem para sala ${room.name}`
+          )
+          client
+            .to(room.name)
+            .emit(SocketNamespace.MESSAGE_TO_ROOM, {
+              senderId: userId,
+              message: data.message,
+            })
+        }
+      }
+    })
+  }
+
+  private getRoomName(client: Socket, data: ChatRoom) {
+    const firstId =
+      client.data.userId < data.recipientId
+        ? client.data.userId
+        : data.recipientId
+    const secondId =
+      client.data.userId > data.recipientId
+        ? client.data.userId
+        : data.recipientId
+    return `ROOM: ${firstId}-${secondId}`
   }
 }
 
