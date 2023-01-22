@@ -7,7 +7,6 @@ export default class UserEntity {
   name!: string
   email!: string
   document!: string
-  birthDate!: Date
   gender!: string
   phone?: string | null
   password!: string
@@ -20,7 +19,6 @@ export default class UserEntity {
     name?: string,
     email?: string,
     document?: string,
-    birthDate?: Date | string,
     gender?: string,
     phone?: string | null,
     password?: string,
@@ -29,10 +27,9 @@ export default class UserEntity {
     createdAt?: Date
   ) {
     if (id !== undefined) this.id = id
-    if (name !== undefined) this.name = name
-    if (email !== undefined) this.email = email
+    if (name !== undefined) this.name = name.trim()
+    if (email !== undefined) this.email = email.trim()
     if (document !== undefined) this.document = document
-    if (birthDate !== undefined) this.birthDate = moment(birthDate).toDate()
     if (gender !== undefined) this.gender = gender
     if (phone !== undefined) this.phone = phone
     if (password !== undefined) this.password = password
@@ -47,7 +44,6 @@ export default class UserEntity {
       dto.name,
       dto.email,
       dto.document,
-      dto.birthDate,
       dto.gender,
       dto.phone,
       dto.password,
@@ -63,7 +59,6 @@ export default class UserEntity {
       entity.name,
       entity.email,
       entity.document,
-      entity.birthDate,
       entity.gender,
       entity.phone,
       entity.password,
@@ -79,7 +74,6 @@ export default class UserEntity {
       dto.name,
       undefined,
       dto.document,
-      dto.birthDate,
       dto.gender,
       dto.phone,
       dto.password,
