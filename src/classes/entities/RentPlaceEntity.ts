@@ -3,6 +3,7 @@ import {
   RentPlace,
   RentPlacePhotos,
   Specification,
+  User,
 } from '@prisma/client'
 import RentPlaceDTO from '../dtos/RentPlaceDTO'
 import AddressEntity from './AddressEntity'
@@ -11,9 +12,10 @@ import UserEntity from './UserEntity'
 import RentPlacePhotoEntity from './RentPlacePhotoEntity'
 
 type RentPlacePrismaEntity = RentPlace & {
-  specifications: Specification[]
   address: Address
+  specifications: Array<Specification>
   rentPlacePhotos: Array<RentPlacePhotos>
+  user?: User
 }
 
 export default class RentPlaceEntity {
@@ -81,7 +83,7 @@ export default class RentPlaceEntity {
       rentPlaceEntity.type,
       rentPlaceEntity.roomType,
       Number(rentPlaceEntity.value),
-      undefined,
+      rentPlaceEntity.user && UserEntity.fromEntity(rentPlaceEntity.user),
       AddressEntity.fromEntity(rentPlaceEntity.address),
       rentPlaceEntity.rentPlacePhotos.map((photo) =>
         RentPlacePhotoEntity.fromEntity(photo)

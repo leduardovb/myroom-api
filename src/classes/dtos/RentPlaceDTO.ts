@@ -2,6 +2,7 @@ import AddressDTO from './AddressDTO'
 import SpecificationDTO from './SpecificationDTO'
 import RentPlaceEntity from '../entities/RentPlaceEntity'
 import RentPlacePhotoDTO from './RentPlacePhotoDTO'
+import { UserDTO } from './UserDTO'
 
 export default class RentPlaceDTO {
   public id?: number
@@ -10,6 +11,7 @@ export default class RentPlaceDTO {
   public type?: string
   public roomType?: string
   public value?: number
+  public owner?: UserDTO
   public address?: AddressDTO
   public photos?: Array<RentPlacePhotoDTO>
   public specifications?: Array<SpecificationDTO>
@@ -21,6 +23,7 @@ export default class RentPlaceDTO {
     type?: string,
     roomType?: string,
     value?: number,
+    owner?: UserDTO,
     address?: AddressDTO,
     photos?: Array<RentPlacePhotoDTO>,
     specifications?: Array<SpecificationDTO>
@@ -31,6 +34,7 @@ export default class RentPlaceDTO {
     if (type !== undefined) this.type = type
     if (roomType !== undefined) this.roomType = roomType
     if (value !== undefined) this.value = value
+    if (owner !== undefined) this.owner = owner
     if (address !== undefined) this.address = address
     if (photos !== undefined) this.photos = photos
     if (specifications !== undefined) this.specifications = specifications
@@ -44,6 +48,7 @@ export default class RentPlaceDTO {
       rentPlaceEntity.type,
       rentPlaceEntity.roomType,
       rentPlaceEntity.value,
+      rentPlaceEntity.user && UserDTO.fromEntityOwnerMap(rentPlaceEntity.user),
       rentPlaceEntity.address && AddressDTO.fromEntity(rentPlaceEntity.address),
       rentPlaceEntity.rentPlacePhotos &&
         rentPlaceEntity.rentPlacePhotos.map((photo) =>

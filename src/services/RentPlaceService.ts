@@ -111,4 +111,22 @@ export default class RentPlaceService {
 
     return paginationDTO
   }
+
+  public async single(id: number) {
+    const rentPlaceEntity = await this.database.rentPlace.findUnique({
+      where: { id },
+      include: {
+        address: true,
+        specifications: true,
+        rentPlacePhotos: true,
+        user: true,
+      },
+    })
+    if (!rentPlaceEntity) throw DomainException.entityNotFound('Imóvel')
+
+    const rentPlaceDTO = RentPlaceDTO.fromEntity(
+      RentPlaceEntity.fromEntity(rentPlaceEntity)
+    )
+    return rentPlaceDTO
+  }
 }

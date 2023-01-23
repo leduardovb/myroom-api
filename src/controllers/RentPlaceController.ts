@@ -1,5 +1,5 @@
 import RentPlaceService from '../services/RentPlaceService'
-import { NextFunction, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import {
   ClassErrorMiddleware,
   Controller,
@@ -18,6 +18,7 @@ import { ResponseDTO } from '../classes/dtos/ResponseDTO'
 import { StatusCodes } from 'http-status-codes'
 import joiPaginateMiddleware from '../middlewares/joiPaginateMiddleware'
 import PaginationSchema from '../joi/schemas/PaginationSchema'
+import DomainException from '../exceptions/DomainException'
 
 @Controller('rent-place')
 @ClassErrorMiddleware(apiErrorValidator)
@@ -64,6 +65,30 @@ export default class RentPlaceController {
         .json(
           new ResponseDTO(StatusCodes.OK, 'Apartamentos listados', rentPlaces)
         )
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  @Get(':id')
+  public async single(
+    request: Request,
+    response: Response,
+    next: NextFunction
+  ) {
+    try {
+      if (!request.params.id)
+        throw DomainException.invalidState('ID do imóvel não informado')
+
+      if (isNaN(Number(request.params.id)))
+        throw DomainException.invalidState('ID do imóvel inválido')
+
+      const rentPlace = await this.rentPlaceService.single(
+        Number(request.params.id)
+      )
+      response
+        .status(StatusCodes.OK)
+        .json(new ResponseDTO(StatusCodes.OK, 'Apartamento listado', rentPlace))
     } catch (error) {
       next(error)
     }

@@ -1,5 +1,5 @@
 import { User } from '@prisma/client'
-import moment from 'moment'
+import UserEntity from '../entities/UserEntity'
 
 export class UserDTO {
   id?: number
@@ -49,5 +49,9 @@ export class UserDTO {
       entity.verified,
       entity.isActive
     )
+  }
+
+  static fromEntityOwnerMap(userEntity: UserEntity) {
+    return new UserDTO(userEntity.id, userEntity.name)
   }
 }
