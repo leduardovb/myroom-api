@@ -12,6 +12,7 @@ export default class AuthenticationService {
   }
 
   public async login(loginDTO: LoginDTO) {
+    console.debug('Realizando login: ', JSON.stringify(loginDTO, null, 2))
     const userEntity = await this.database.user.findFirst({
       where: { email: loginDTO.email },
     })
@@ -33,6 +34,8 @@ export default class AuthenticationService {
     const token = createToken(
       new PayloadDTO(userEntity.id, userEntity.isActive, userEntity.verified)
     )
+
+    console.debug(`Login realizado com sucesso: ${userEntity.id}`)
     return token
   }
 }

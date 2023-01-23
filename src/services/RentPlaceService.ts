@@ -5,9 +5,12 @@ import { CreateRentPlaceDTO } from '../dtos/CreateRentPlaceDTO'
 import FirebaseService from './FirebaseService'
 import RentPlaceEntity from '../classes/entities/RentPlaceEntity'
 import UserEntity from '../classes/entities/UserEntity'
-import PhotoDTO from '../classes/dtos/PhotoDTO'
 import RentPlaceDTO from '../classes/dtos/RentPlaceDTO'
 import ViaCepService from './ViaCepService'
+import { Pagination } from '../interfaces/Pagination'
+import ResumedRentPlaceDTO from '../classes/dtos/ResumedRentPlaceDTO'
+import PaginationDTO from '../classes/dtos/PaginationDTO'
+import RentPlacePhotoEntity from '../classes/entities/RentPlacePhotoEntity'
 
 export default class RentPlaceService {
   constructor(
@@ -30,7 +33,6 @@ export default class RentPlaceService {
     if (!cepInfo) throw DomainException.invalidState('CEP informado inválido')
 
     const rentPlaceEntity = RentPlaceEntity.fromDTO(data)
-    rentPlaceEntity.user = UserEntity.fromEntity(userOwner)
     const newPlaceEntity = await this.database.rentPlace.create({
       data: {
         ...rentPlaceEntity,
@@ -48,30 +50,65 @@ export default class RentPlaceService {
         specifications: {
           create: rentPlaceEntity.specifications,
         },
+        rentPlacePhotos: {
+          createMany: {
+            data: rentPlaceEntity.rentPlacePhotos,
+          },
+        },
       },
       include: {
         address: true,
         specifications: true,
+        rentPlacePhotos: true,
       },
     })
-    const photos = new Array<PhotoDTO>()
-    let photoId = 1
-    for (const image of data.images) {
-      const bucketPath = `rent-place:${newPlaceEntity.id}/${photoId}-${image.name}.${image.extension}`
+
+    const savedRentPlaceEntity = RentPlaceEntity.fromEntity(newPlaceEntity)
+
+    for (const image of data.photos) {
+      const bucketPath = `rent-place:${newPlaceEntity.id}/${image.name}`
       const snapshot = await this.firebaseService.uploadToBucket(
         bucketPath,
         image.dataUrl
       )
-      photos.push(new PhotoDTO(photoId, snapshot.url, image.name))
-      photoId++
+      const rentPlacePhotoEntity = savedRentPlaceEntity.rentPlacePhotos.find(
+        (photo) => photo.name === image.name
+      )
+      rentPlacePhotoEntity!.url = snapshot.url
+    }
+
+    for (const rentPlacePhoto of savedRentPlaceEntity.rentPlacePhotos) {
+      await this.database.rentPlacePhotos.update({
+        data: rentPlacePhoto,
+        where: { id: rentPlacePhoto.id },
+      })
     }
 
     console.debug(`Novo imóvel cadastrado: ${newPlaceEntity.id}`)
 
-    const rentPlaceDTO = RentPlaceDTO.fromEntity(
-      RentPlaceEntity.fromEntity(newPlaceEntity)
-    )
-    rentPlaceDTO.photos = photos
+    const rentPlaceDTO = RentPlaceDTO.fromEntity(savedRentPlaceEntity)
     return rentPlaceDTO
+  }
+
+  public async list(pagination: Pagination) {
+    const rentPlaceEntities = await this.database.rentPlace.findMany({
+      skip: (Number(pagination.page) - 1) * Number(pagination.limit),
+      take: Number(pagination.limit),
+      include: {
+        address: true,
+        rentPlacePhotos: true,
+      },
+    })
+
+    const resumedRentPlaceDTOs = rentPlaceEntities.map((rentPlaceEntity) =>
+      ResumedRentPlaceDTO.fromPrismaEntity(rentPlaceEntity)
+    )
+    const paginationDTO = new PaginationDTO<ResumedRentPlaceDTO>(
+      resumedRentPlaceDTOs,
+      pagination.page,
+      pagination.limit
+    )
+
+    return paginationDTO
   }
 }

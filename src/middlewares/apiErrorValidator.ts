@@ -16,7 +16,7 @@ export default function apiErrorValidator(
     error instanceof AuthenticationException
   ) {
     const errorCode = error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR
-    response.status(errorCode).send({
+    response.status(errorCode).json({
       message: error.message,
       code: errorCode,
     })
@@ -25,19 +25,19 @@ export default function apiErrorValidator(
     const message = firstField
       ? `O campo ${firstField} é inválido`
       : 'Dados inválidos'
-    response.status(400).send({
+    response.status(400).json({
       message: message,
       code: 400,
     })
   } else if (error instanceof JsonWebTokenError) {
     if (error.message === 'jwt malformed') {
-      response.status(401).send({
+      response.status(401).json({
         message: 'O token não está no formato correto',
         code: 401,
       })
     }
   } else {
-    response.status(500).send({
+    response.status(500).json({
       message: error.message,
       code: 500,
     })

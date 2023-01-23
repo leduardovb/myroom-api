@@ -3,6 +3,7 @@ import { NextFunction, Response } from 'express'
 import {
   ClassErrorMiddleware,
   Controller,
+  Get,
   Middleware,
   Post,
 } from '@overnightjs/core'
@@ -11,10 +12,12 @@ import jwtMiddleware from '../middlewares/jwtMiddleware'
 import joiMiddleware from '../middlewares/joiMiddleware'
 import FirebaseService from '../services/FirebaseService'
 import CreateRentPlaceSchema from '../joi/schemas/CreateRentPlaceSchema'
-import { RequestBody } from '../interfaces/RequestBody'
+import { RequestBody, RequestPaginated } from '../interfaces/RequestBody'
 import { CreateRentPlaceDTO } from '../dtos/CreateRentPlaceDTO'
 import { ResponseDTO } from '../classes/dtos/ResponseDTO'
 import { StatusCodes } from 'http-status-codes'
+import joiPaginateMiddleware from '../middlewares/joiPaginateMiddleware'
+import PaginationSchema from '../joi/schemas/PaginationSchema'
 
 @Controller('rent-place')
 @ClassErrorMiddleware(apiErrorValidator)
@@ -41,6 +44,25 @@ export default class RentPlaceController {
             'Apartamento criado com sucesso',
             rentPlace
           )
+        )
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  @Get('list')
+  @Middleware(joiPaginateMiddleware(PaginationSchema.schema))
+  public async list(
+    request: RequestPaginated,
+    response: Response,
+    next: NextFunction
+  ) {
+    try {
+      const rentPlaces = await this.rentPlaceService.list(request.query)
+      response
+        .status(StatusCodes.OK)
+        .json(
+          new ResponseDTO(StatusCodes.OK, 'Apartamentos listados', rentPlaces)
         )
     } catch (error) {
       next(error)

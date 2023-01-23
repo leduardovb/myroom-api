@@ -1,7 +1,7 @@
-import PhotoDTO from './PhotoDTO'
 import AddressDTO from './AddressDTO'
 import SpecificationDTO from './SpecificationDTO'
 import RentPlaceEntity from '../entities/RentPlaceEntity'
+import RentPlacePhotoDTO from './RentPlacePhotoDTO'
 
 export default class RentPlaceDTO {
   public id?: number
@@ -11,7 +11,7 @@ export default class RentPlaceDTO {
   public roomType?: string
   public value?: number
   public address?: AddressDTO
-  public photos?: Array<PhotoDTO>
+  public photos?: Array<RentPlacePhotoDTO>
   public specifications?: Array<SpecificationDTO>
 
   constructor(
@@ -22,7 +22,7 @@ export default class RentPlaceDTO {
     roomType?: string,
     value?: number,
     address?: AddressDTO,
-    photos?: Array<PhotoDTO>,
+    photos?: Array<RentPlacePhotoDTO>,
     specifications?: Array<SpecificationDTO>
   ) {
     if (id !== undefined) this.id = id
@@ -45,7 +45,10 @@ export default class RentPlaceDTO {
       rentPlaceEntity.roomType,
       rentPlaceEntity.value,
       rentPlaceEntity.address && AddressDTO.fromEntity(rentPlaceEntity.address),
-      undefined,
+      rentPlaceEntity.rentPlacePhotos &&
+        rentPlaceEntity.rentPlacePhotos.map((photo) =>
+          RentPlacePhotoDTO.fromEntity(photo)
+        ),
       rentPlaceEntity.specifications &&
         rentPlaceEntity.specifications.map((specification) =>
           SpecificationDTO.fromEntity(specification)

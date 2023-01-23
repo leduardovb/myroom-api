@@ -1,7 +1,6 @@
 import Joi from 'joi'
 import { DefaultSchema } from './DefaultSchema'
 import {
-  PermitedExtension,
   RentPlaceRoomType,
   RentPlaceSpecification,
   RentPlaceType,
@@ -34,21 +33,16 @@ export default class CreateRentPlaceSchema extends DefaultSchema {
         neighborhood: Joi.string().trim().required().min(4).max(60),
         zipCode: Joi.string().trim().required().length(8).pattern(/^\d+$/),
       }).required(),
-      images: Joi.array()
+      photos: Joi.array()
         .items(
           Joi.object({
             name: Joi.string().trim().required().min(4).max(60),
-            extension: Joi.string()
-              .valid(
-                PermitedExtension.JPEG,
-                PermitedExtension.JPG,
-                PermitedExtension.PNG
-              )
-              .required(),
             dataUrl: Joi.string().required(),
           })
         )
         .min(1)
+        .max(10)
+        .unique('name')
         .required(),
       specifications: Joi.array()
         .items(

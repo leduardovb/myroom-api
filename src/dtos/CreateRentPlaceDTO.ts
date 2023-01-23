@@ -24,6 +24,6 @@ export interface CreateRentPlaceDTO {
   roomType: string
   value: number
   address: AddressDTO
-  images: Array<PhotoDTO>
+  photos: Array<PhotoDTO>
   specifications: Array<SpecificationDTO>
 }

@@ -36,9 +36,3 @@ export enum RentPlaceSpecification {
   GARAGE = 'garage',
   LODGER = 'lodger',
 }
-
-export enum PermitedExtension {
-  JPG = 'jpg',
-  JPEG = 'jpeg',
-  PNG = 'png',
-}

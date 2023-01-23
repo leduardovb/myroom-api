@@ -16,6 +16,10 @@ export default class UserService {
   }
 
   public async create(createUserDTO: CreateUserDTO) {
+    console.debug(
+      'Criando novo usuário: ',
+      JSON.stringify(createUserDTO, null, 2)
+    )
     await this.failIfEntityExistsBy(
       { email: createUserDTO.email },
       'Email já cadastrado'
@@ -29,6 +33,8 @@ export default class UserService {
     const newUserEntity = UserEntity.fromDTO(createUserDTO)
     newUserEntity.password = await hashPassword(createUserDTO.password)
     const userEntity = await this.database.user.create({ data: newUserEntity })
+
+    console.debug(`Usuário criado com sucesso: ${userEntity.id}`)
 
     return UserDTO.fromEntity(userEntity)
   }

@@ -41,20 +41,31 @@ model UserMessage {
 }
 
 model RentPlace {
-  id             Int             @id @default(autoincrement())
-  name           String          @db.VarChar(60)
-  description    String?         @db.VarChar(300)
-  type           String          @db.VarChar(11)
-  roomType       String          @db.VarChar(13)
-  value          Decimal         @db.Decimal(10, 2)
-  createdAt      DateTime        @default(now()) @map("created_at")
-  userId         Int             @map("user_id")
-  addressId      Int             @unique @map("address_id")
-  user           User            @relation(name: "UserRentPlaces", fields: [userId], references: [id])
-  address        Address         @relation(fields: [addressId], references: [id])
-  specifications Specification[] @relation("RentPlaceSpecifications")
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(60)
+  description     String?           @db.VarChar(300)
+  type            String            @db.VarChar(11)
+  roomType        String            @db.VarChar(13)
+  value           Decimal           @db.Decimal(10, 2)
+  createdAt       DateTime          @default(now()) @map("created_at")
+  userId          Int               @map("user_id")
+  addressId       Int               @unique @map("address_id")
+  user            User              @relation(name: "UserRentPlaces", fields: [userId], references: [id])
+  address         Address           @relation(fields: [addressId], references: [id])
+  specifications  Specification[]   @relation("RentPlaceSpecifications")
+  rentPlacePhotos RentPlacePhotos[] @relation("RentPlacePhotos")
 
   @@map("rent_places")
+}
+
+model RentPlacePhotos {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(60)
+  url         String?   @db.VarChar(255)
+  rentPlaceId Int       @map("rent_place_id")
+  rentPlace   RentPlace @relation(name: "RentPlacePhotos", fields: [rentPlaceId], references: [id])
+
+  @@map("rent_place_photos")
 }
 
 model Specification {
