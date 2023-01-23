@@ -4,13 +4,11 @@ import DomainException from '../exceptions/DomainException'
 import { CreateRentPlaceDTO } from '../dtos/CreateRentPlaceDTO'
 import FirebaseService from './FirebaseService'
 import RentPlaceEntity from '../classes/entities/RentPlaceEntity'
-import UserEntity from '../classes/entities/UserEntity'
 import RentPlaceDTO from '../classes/dtos/RentPlaceDTO'
 import ViaCepService from './ViaCepService'
 import { Pagination } from '../interfaces/Pagination'
 import ResumedRentPlaceDTO from '../classes/dtos/ResumedRentPlaceDTO'
 import PaginationDTO from '../classes/dtos/PaginationDTO'
-import RentPlacePhotoEntity from '../classes/entities/RentPlacePhotoEntity'
 
 export default class RentPlaceService {
   constructor(

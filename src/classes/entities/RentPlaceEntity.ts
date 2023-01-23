@@ -12,9 +12,9 @@ import UserEntity from './UserEntity'
 import RentPlacePhotoEntity from './RentPlacePhotoEntity'
 
 type RentPlacePrismaEntity = RentPlace & {
-  address: Address
-  specifications: Array<Specification>
-  rentPlacePhotos: Array<RentPlacePhotos>
+  address?: Address
+  specifications?: Array<Specification>
+  rentPlacePhotos?: Array<RentPlacePhotos>
   user?: User
 }
 
@@ -84,11 +84,12 @@ export default class RentPlaceEntity {
       rentPlaceEntity.roomType,
       Number(rentPlaceEntity.value),
       rentPlaceEntity.user && UserEntity.fromEntity(rentPlaceEntity.user),
-      AddressEntity.fromEntity(rentPlaceEntity.address),
-      rentPlaceEntity.rentPlacePhotos.map((photo) =>
+      rentPlaceEntity.address &&
+        AddressEntity.fromEntity(rentPlaceEntity.address),
+      rentPlaceEntity.rentPlacePhotos?.map((photo) =>
         RentPlacePhotoEntity.fromEntity(photo)
       ),
-      rentPlaceEntity.specifications.map((specification) =>
+      rentPlaceEntity.specifications?.map((specification) =>
         SpecificationEntity.fromEntity(specification)
       ),
       rentPlaceEntity.createdAt

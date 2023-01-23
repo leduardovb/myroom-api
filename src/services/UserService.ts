@@ -4,9 +4,14 @@ import DomainException from '../exceptions/DomainException'
 import { hashPassword } from '../helpers/functions'
 import { UserDTO } from '../classes/dtos/UserDTO'
 import UserEntity from '../classes/entities/UserEntity'
+import UserFavoriteEntity from '../classes/entities/UserFavoriteEntity'
 import { UpdateUserDTO } from '../dtos/UpdateUserDTO'
 import PayloadDTO from '../classes/dtos/PayloadDTO'
 import { Prisma } from '@prisma/client'
+import { ResponseDTO } from '../classes/dtos/ResponseDTO'
+import { StatusCodes } from 'http-status-codes'
+import UserFavoriteDTO from '../classes/dtos/UserFavoriteDTO'
+import ResumedRentPlaceDTO from '../classes/dtos/ResumedRentPlaceDTO'
 
 export default class UserService {
   private database: PrismaClient
@@ -70,6 +75,62 @@ export default class UserService {
       'Usuário não encontrado'
     )
     return UserDTO.fromEntity(userEntity)
+  }
+
+  public async handleFavorite(payload: PayloadDTO, rentPlaceId: number) {
+    const userEntity = await this.getOrFailBy(
+      { id: payload.userId },
+      'Usuário não encontrado'
+    )
+    const rentPlaceEntity = await this.database.rentPlace.findFirst({
+      where: { id: rentPlaceId },
+    })
+    if (!rentPlaceEntity)
+      throw DomainException.entityNotFound('Imóvel não encontrado')
+    const entity = await this.database.userFavorites.findFirst({
+      where: { userId: userEntity.id, rentPlaceId: rentPlaceEntity.id },
+    })
+
+    if (entity) {
+      const savedEntity = await this.database.userFavorites.delete({
+        where: { userId_rentPlaceId: { rentPlaceId, userId: payload.userId } },
+      })
+      return new ResponseDTO(
+        StatusCodes.OK,
+        'Imóvel removido dos favoritos',
+        UserFavoriteEntity.fromEntity(savedEntity)
+      )
+    } else {
+      const savedEntity = await this.database.userFavorites.create({
+        data: { userId: userEntity.id, rentPlaceId: rentPlaceEntity.id },
+      })
+      return new ResponseDTO(
+        StatusCodes.OK,
+        'Imóvel adicionado aos favoritos',
+        UserFavoriteDTO.fromEntity(UserFavoriteEntity.fromEntity(savedEntity))
+      )
+    }
+  }
+
+  public async listFavorites(userId: number) {
+    const userEntity = await this.getOrFailBy(
+      { id: userId },
+      'Usuário não encontrado'
+    )
+    const userFavoriteEntities = await this.database.userFavorites.findMany({
+      where: { userId: userEntity.id },
+      include: {
+        rentPlace: {
+          include: {
+            rentPlacePhotos: true,
+            address: true,
+          },
+        },
+      },
+    })
+    return userFavoriteEntities.map((entity) =>
+      ResumedRentPlaceDTO.fromPrismaEntity(entity.rentPlace)
+    )
   }
 
   private async failIfEntityExistsBy(

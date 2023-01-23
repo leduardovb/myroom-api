@@ -1,4 +1,3 @@
-import moment from 'moment'
 import { UserDTO } from '../dtos/UserDTO'
 import { User } from '@prisma/client'
 
