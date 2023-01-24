@@ -1,4 +1,4 @@
-export default class UserMessageDTO {
+export default class NewMessageDTO {
   public senderId: number
   public recipientId: number
   public message: string

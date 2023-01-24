@@ -1,9 +1,12 @@
 import { PrismaClient } from '@prisma/client'
 import ChatDTO from '../classes/dtos/ChatDTO'
-import UserMessageDTO from '../dtos/UserMessageDTO'
+import NewMessageDTO from '../dtos/NewMessageDTO'
+import UserMessageDTO from '../classes/dtos/UserMessageDTO'
+import UserMessageEntity from '../classes/entities/UserMessageEntity'
+import { SocketIo } from '../socket/SocketIo'
 
 export default class NotificationsService {
-  constructor(private database: PrismaClient) {}
+  constructor(private database: PrismaClient, private socket: SocketIo) {}
 
   public async listUserChats(userId: number) {
     const chatDTOs = new Array<ChatDTO>()
@@ -34,23 +37,63 @@ export default class NotificationsService {
     return chatDTOs
   }
 
-  public async saveMessage(userMessageDTO: UserMessageDTO) {
+  public async saveMessage(newMessageDTO: NewMessageDTO) {
     const senderExists =
       this.database.user.findFirst({
-        where: { id: userMessageDTO.senderId },
+        where: { id: newMessageDTO.senderId },
       }) !== null
     const recipientExists =
       this.database.user.findFirst({
-        where: { id: userMessageDTO.recipientId },
+        where: { id: newMessageDTO.recipientId },
       }) !== null
 
     if (senderExists && recipientExists) {
       const userMessageEntity = await this.database.userMessage.create({
-        data: userMessageDTO,
+        data: UserMessageEntity.fromDTO(newMessageDTO),
       })
       console.debug(`Mensagem salva com sucesso`)
+
+      this.socket.sendMessageToRoom(
+        UserMessageDTO.fromEntity(userMessageEntity)
+      )
       return userMessageEntity
     }
     return null
+  }
+
+  public async listUserMessages(userId: number, recipientId: number) {
+    console.debug(`Listando mensagens do usuário ${userId}`)
+    const userMessages = await this.database.userMessage.findMany({
+      where: {
+        OR: [
+          {
+            AND: [
+              {
+                senderId: userId,
+              },
+              {
+                recipientId: recipientId,
+              },
+            ],
+          },
+          {
+            AND: [
+              {
+                senderId: recipientId,
+              },
+              {
+                recipientId: userId,
+              },
+            ],
+          },
+        ],
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    })
+    return userMessages.map((userMessage) =>
+      UserMessageDTO.fromEntity(userMessage)
+    )
   }
 }

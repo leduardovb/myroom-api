@@ -1,9 +1,11 @@
-export default class SocketUserDTO {
-  public userId: string
-  public socketId: string
+import { Socket } from 'socket.io'
 
-  constructor(userId: string, socketId: string) {
+export default class SocketUserDTO {
+  public userId: number
+  public socket: Socket
+
+  constructor(userId: number, socket: Socket) {
     this.userId = userId
-    this.socketId = socketId
+    this.socket = socket
   }
 }

@@ -7,19 +7,14 @@ import { decodeToken } from '../helpers/functions'
 import SocketUserDTO from '../dtos/SocketUserDTO'
 import { ChatRoom } from '../interfaces/ChatRoom'
 import RoomDTO from '../dtos/RoomDTO'
-import { Message } from '../interfaces/Message'
-import NotificationsService from '../services/NotificationsService'
-import { PrismaClient } from '@prisma/client'
-import UserMessageDTO from '../dtos/UserMessageDTO'
+import UserMessageDTO from '../classes/dtos/UserMessageDTO'
 
 export class SocketIo extends Server {
-  private notificationsService: NotificationsService
   private connectedUserDTOs: Array<SocketUserDTO>
   private rooms: Array<RoomDTO>
 
   constructor(
-    httpServer: HtppServer<typeof IncomingMessage, typeof ServerResponse>,
-    database: PrismaClient
+    httpServer: HtppServer<typeof IncomingMessage, typeof ServerResponse>
   ) {
     super(httpServer, {
       cors: {
@@ -29,12 +24,12 @@ export class SocketIo extends Server {
     })
     this.connectedUserDTOs = new Array<SocketUserDTO>()
     this.rooms = new Array<RoomDTO>()
-    this.notificationsService = new NotificationsService(database)
   }
 
-  public init(): void {
+  public init() {
     this.startListening()
     this.socketMiddleware()
+    return this
   }
 
   private socketMiddleware() {
@@ -46,7 +41,6 @@ export class SocketIo extends Server {
       this.handleConnection(socket)
       this.handleDisconnect(socket)
       this.handleCreateChatRoom(socket)
-      this.handleMessageToRoom(socket)
     })
   }
 
@@ -54,22 +48,28 @@ export class SocketIo extends Server {
     const isAlreadyConnected = this.connectedUserDTOs.some(
       (userDTO) => userDTO.userId === client.data.userId
     )
+    console.debug(`Usuário ${client.data.userId} tentando conectar`)
+
     if (!isAlreadyConnected) {
-      const userDTO = new SocketUserDTO(client.data.userId, client.id)
+      console.debug(`Usuário ${client.data.userId} conectado`)
+      const userDTO = new SocketUserDTO(Number(client.data.userId), client)
       this.connectedUserDTOs.push(userDTO)
-    } else client.disconnect(true)
+    } else {
+      console.debug(`Usuário ${client.data.userId} já conectado`)
+    }
   }
 
   private handleDisconnect(client: Socket) {
     client.on(SocketNamespace.DISCONNECT, () => {
       this.connectedUserDTOs = this.connectedUserDTOs.filter(
-        (userDTO) => userDTO.socketId !== client.id
+        (userDTO) => userDTO.socket.id !== client.id
       )
     })
   }
 
   private handleCreateChatRoom(client: Socket) {
     client.on(SocketNamespace.CONNECT_ROOM, (data: ChatRoom) => {
+      console.debug('Criando sala de chat')
       if (!data?.recipientId) console.debug('Não informado o recipiente')
       else {
         if (data.recipientId !== Number(client.data.userId)) {
@@ -85,37 +85,30 @@ export class SocketIo extends Server {
               `Usuário ${client.data.userId} conectado na sala: ${roomName}`
             )
             client.join(roomName)
-            client.emit(SocketNamespace.CONNECTED_ROOM, roomName)
           }
         }
       }
     })
   }
 
-  private handleMessageToRoom(client: Socket) {
-    client.on(SocketNamespace.MESSAGE_TO_ROOM, async (data: Message) => {
-      const room = this.rooms.find((room) => room.name === data?.roomName)
-      if (room && data?.message?.trim()) {
-        const userId = client.data.userId
-        const isMemberOfRoom =
-          room.name.includes(userId.toString()) && client.rooms.has(room.name)
-        if (isMemberOfRoom) {
-          const users = room.name.split('-')
-          const recipientId = users.find((user) => user !== String(userId))
-          const messageEntity = await this.notificationsService.saveMessage(
-            new UserMessageDTO(userId, Number(recipientId), data.message)
-          )
-          if (messageEntity) {
-            console.debug(
-              `Usuário ${userId} mandando mensagem para sala ${room.name}`
-            )
-            client.to(room.name).emit(SocketNamespace.MESSAGE_TO_ROOM, {
-              senderId: userId,
-              message: data.message.trim(),
-            })
-          }
-        }
-      }
+  public sendMessageToRoom(userMessageDTO: UserMessageDTO) {
+    const connectedUser = this.connectedUserDTOs.find(
+      (userDTO) => userDTO.userId === userMessageDTO.senderId!
+    )
+
+    if (!connectedUser) return
+    const roomName = this.getRoomName(connectedUser.socket, {
+      recipientId: userMessageDTO.recipientId!,
+    })
+    if (!roomName) return
+    if (!connectedUser.socket.rooms.has(roomName)) return
+
+    console.debug(`Usuário ${userMessageDTO.senderId} enviou mensagem`)
+
+    connectedUser.socket.to(roomName).emit(SocketNamespace.MESSAGE_FROM_ROOM, {
+      senderId: userMessageDTO.senderId,
+      recipientId: userMessageDTO.recipientId,
+      message: userMessageDTO.message,
     })
   }
 

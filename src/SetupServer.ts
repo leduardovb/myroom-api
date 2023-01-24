@@ -15,17 +15,21 @@ import ViaCepService from './services/ViaCepService'
 import NotificationsService from './services/NotificationsService'
 import AuthenticationService from './services/AuthenticationService'
 import UserService from './services/UserService'
+import { SocketIo } from './socket/SocketIo'
 
 export default class SetupServer extends Server {
   public httpServer!: http.Server
   private firebaseService!: FirebaseService
+  private socket!: SocketIo
 
   constructor(private port = 3000, public database = new PrismaClient()) {
     super()
   }
 
   public async init(): Promise<void> {
+    this.startServer()
     this.setupExpress()
+    this.setupSocket()
     this.setupFirebase()
     this.setupControllers()
     await this.setupDatabase()
@@ -46,7 +50,9 @@ export default class SetupServer extends Server {
     this.addControllers([
       new UserController(new UserService(this.database)),
       new AuthenticationController(new AuthenticationService(this.database)),
-      new NotificationsController(new NotificationsService(this.database)),
+      new NotificationsController(
+        new NotificationsService(this.database, this.socket)
+      ),
       new RentPlaceController(
         new RentPlaceService(
           this.database,
@@ -61,11 +67,15 @@ export default class SetupServer extends Server {
     this.firebaseService = new FirebaseService().init()
   }
 
+  private setupSocket(): void {
+    this.socket = new SocketIo(this.httpServer).init()
+  }
+
   private async setupDatabase(): Promise<void> {
     await this.database.$connect()
   }
 
-  start() {
+  private startServer() {
     this.httpServer = this.app.listen(this.port, () => {
       console.log(`Server listening on: http://localhost:${this.port}`)
     })
