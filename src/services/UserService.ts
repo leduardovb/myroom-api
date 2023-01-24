@@ -78,6 +78,10 @@ export default class UserService {
   }
 
   public async handleFavorite(payload: PayloadDTO, rentPlaceId: number) {
+    console.debug(
+      'Adicionando ou removendo imóvel dos favoritos: ',
+      rentPlaceId
+    )
     const userEntity = await this.getOrFailBy(
       { id: payload.userId },
       'Usuário não encontrado'

@@ -89,6 +89,7 @@ export default class RentPlaceService {
   }
 
   public async list(pagination: Pagination) {
+    console.debug(`Listando imóveis: ${pagination.page}/${pagination.limit}`)
     const rentPlaceEntities = await this.database.rentPlace.findMany({
       skip: (Number(pagination.page) - 1) * Number(pagination.limit),
       take: Number(pagination.limit),
@@ -126,5 +127,16 @@ export default class RentPlaceService {
       RentPlaceEntity.fromEntity(rentPlaceEntity)
     )
     return rentPlaceDTO
+  }
+
+  public async isFavorite(id: number, userId: number) {
+    const isFavorite =
+      (await this.database.userFavorites.findFirst({
+        where: {
+          userId,
+          rentPlaceId: id,
+        },
+      })) !== null
+    return isFavorite
   }
 }

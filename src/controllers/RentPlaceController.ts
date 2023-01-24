@@ -10,9 +10,12 @@ import {
 import apiErrorValidator from '../middlewares/apiErrorValidator'
 import jwtMiddleware from '../middlewares/jwtMiddleware'
 import joiMiddleware from '../middlewares/joiMiddleware'
-import FirebaseService from '../services/FirebaseService'
 import CreateRentPlaceSchema from '../joi/schemas/CreateRentPlaceSchema'
-import { RequestBody, RequestPaginated } from '../interfaces/RequestBody'
+import {
+  RequestBody,
+  RequestPaginated,
+  RequestPayload,
+} from '../interfaces/RequestBody'
 import { CreateRentPlaceDTO } from '../dtos/CreateRentPlaceDTO'
 import { ResponseDTO } from '../classes/dtos/ResponseDTO'
 import { StatusCodes } from 'http-status-codes'
@@ -70,7 +73,7 @@ export default class RentPlaceController {
     }
   }
 
-  @Get(':id')
+  @Get('single/:id')
   public async single(
     request: Request,
     response: Response,
@@ -89,6 +92,32 @@ export default class RentPlaceController {
       response
         .status(StatusCodes.OK)
         .json(new ResponseDTO(StatusCodes.OK, 'Apartamento listado', rentPlace))
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  @Get('is-favorite/:id')
+  @Middleware(jwtMiddleware)
+  public async isFavorite(
+    request: RequestPayload,
+    response: Response,
+    next: NextFunction
+  ) {
+    try {
+      if (!request.params.id)
+        throw DomainException.invalidState('ID do imóvel não informado')
+
+      if (isNaN(Number(request.params.id)))
+        throw DomainException.invalidState('ID do imóvel inválido')
+
+      const isFavorite = await this.rentPlaceService.isFavorite(
+        Number(request.params.id),
+        request.payload!.userId
+      )
+      response
+        .status(StatusCodes.OK)
+        .json(new ResponseDTO(StatusCodes.OK, '', isFavorite))
     } catch (error) {
       next(error)
     }

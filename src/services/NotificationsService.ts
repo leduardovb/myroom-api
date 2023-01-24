@@ -25,11 +25,11 @@ export default class NotificationsService {
     })
 
     userChats.forEach((userChat) => {
-      const username =
+      const user =
         userChat.senderId === userId
-          ? userChat.userChatRecipient.name
-          : userChat.userChatSender.name
-      chatDTOs.push(new ChatDTO(username, userChat.lastMessage))
+          ? userChat.userChatRecipient
+          : userChat.userChatSender
+      chatDTOs.push(new ChatDTO(user.id, user.name, userChat.lastMessage))
     })
     return chatDTOs
   }

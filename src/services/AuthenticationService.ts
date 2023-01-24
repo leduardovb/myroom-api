@@ -19,7 +19,6 @@ export default class AuthenticationService {
 
     if (!userEntity)
       throw DomainException.invalidState('Senha ou email inválidos')
-
     const isPasswordValid = await comparePasswords(
       userEntity.password,
       loginDTO.password
