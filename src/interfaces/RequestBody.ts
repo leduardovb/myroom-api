@@ -12,5 +12,6 @@ export interface RequestPayload extends Request {
 }
 
 export interface RequestPaginated extends Express.Request {
+  payload?: PayloadDTO
   query: Pagination
 }

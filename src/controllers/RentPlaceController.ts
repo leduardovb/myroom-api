@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from 'express'
 import {
   ClassErrorMiddleware,
   Controller,
+  Delete,
   Get,
   Middleware,
   Post,
@@ -73,6 +74,33 @@ export default class RentPlaceController {
     }
   }
 
+  @Get('list-by-user')
+  @Middleware([jwtMiddleware, joiPaginateMiddleware(PaginationSchema.schema)])
+  public async listByUser(
+    request: RequestPaginated,
+    response: Response,
+    next: NextFunction
+  ) {
+    try {
+      const payload = request.payload!
+      const rentPlaces = await this.rentPlaceService.listByUser(
+        request.query,
+        payload.userId
+      )
+      response
+        .status(StatusCodes.OK)
+        .json(
+          new ResponseDTO(
+            StatusCodes.OK,
+            `Apartamentos do usário ${payload.userId} listados`,
+            rentPlaces
+          )
+        )
+    } catch (error) {
+      next(error)
+    }
+  }
+
   @Get('single/:id')
   public async single(
     request: Request,
@@ -118,6 +146,38 @@ export default class RentPlaceController {
       response
         .status(StatusCodes.OK)
         .json(new ResponseDTO(StatusCodes.OK, '', isFavorite))
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  @Delete(':id')
+  @Middleware(jwtMiddleware)
+  public async delete(
+    request: RequestPayload,
+    response: Response,
+    next: NextFunction
+  ) {
+    try {
+      const payload = request.payload!
+      if (!request.params.id)
+        throw DomainException.invalidState('ID do imóvel não informado')
+      if (isNaN(Number(request.params.id)))
+        throw DomainException.invalidState('ID do imóvel inválido')
+
+      const deletedRentPlace = await this.rentPlaceService.delete(
+        Number(request.params.id),
+        payload.userId
+      )
+      response
+        .status(StatusCodes.OK)
+        .json(
+          new ResponseDTO(
+            StatusCodes.OK,
+            'Apartamento excluído com sucesso',
+            deletedRentPlace
+          )
+        )
     } catch (error) {
       next(error)
     }

@@ -90,6 +90,7 @@ export default class RentPlaceService {
 
   public async list(pagination: Pagination) {
     console.debug(`Listando imóveis: ${pagination.page}/${pagination.limit}`)
+    const countRentPlaces = await this.database.rentPlace.count()
     const rentPlaceEntities = await this.database.rentPlace.findMany({
       skip: (Number(pagination.page) - 1) * Number(pagination.limit),
       take: Number(pagination.limit),
@@ -105,7 +106,38 @@ export default class RentPlaceService {
     const paginationDTO = new PaginationDTO<ResumedRentPlaceDTO>(
       resumedRentPlaceDTOs,
       pagination.page,
-      pagination.limit
+      pagination.limit,
+      countRentPlaces
+    )
+
+    return paginationDTO
+  }
+
+  public async listByUser(pagination: Pagination, userId: number) {
+    console.debug(
+      `Listando imóveis do usuário ${userId}: ${pagination.page}/${pagination.limit}`
+    )
+    const countRentPlaces = await this.database.rentPlace.count({
+      where: { userId },
+    })
+    const rentPlaceEntities = await this.database.rentPlace.findMany({
+      skip: (Number(pagination.page) - 1) * Number(pagination.limit),
+      take: Number(pagination.limit),
+      where: { userId },
+      include: {
+        address: true,
+        rentPlacePhotos: true,
+      },
+    })
+
+    const resumedRentPlaceDTOs = rentPlaceEntities.map((rentPlaceEntity) =>
+      ResumedRentPlaceDTO.fromPrismaEntity(rentPlaceEntity)
+    )
+    const paginationDTO = new PaginationDTO<ResumedRentPlaceDTO>(
+      resumedRentPlaceDTOs,
+      pagination.page,
+      pagination.limit,
+      countRentPlaces
     )
 
     return paginationDTO
@@ -138,5 +170,19 @@ export default class RentPlaceService {
         },
       })) !== null
     return isFavorite
+  }
+
+  public async delete(id: number, userId: number) {
+    const rentPlaceEntity = await this.database.rentPlace.findUnique({
+      where: { id },
+    })
+    if (!rentPlaceEntity) throw DomainException.entityNotFound('Imóvel')
+    if (rentPlaceEntity.userId !== userId)
+      throw DomainException.invalidState('Usuário não é dono do imóvel')
+
+    await this.database.rentPlace.delete({
+      where: { id },
+    })
+    return RentPlaceDTO.fromEntity(RentPlaceEntity.fromEntity(rentPlaceEntity))
   }
 }
