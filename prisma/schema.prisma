@@ -122,8 +122,9 @@ view UserChat {
   senderId          Int
   recipientId       Int
   lastMessage       String
-  userChatSender    User   @relation(name: "UserChatSender", fields: [senderId], references: [id])
-  userChatRecipient User   @relation(name: "UserChatRecipient", fields: [recipientId], references: [id])
+  sentDate          DateTime
+  userChatSender    User     @relation(name: "UserChatSender", fields: [senderId], references: [id])
+  userChatRecipient User     @relation(name: "UserChatRecipient", fields: [recipientId], references: [id])
 
   @@id([senderId, recipientId])
   @@map("user_chats")

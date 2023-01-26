@@ -32,7 +32,11 @@ export default class NotificationsService {
         userChat.senderId === userId
           ? userChat.userChatRecipient
           : userChat.userChatSender
-      chatDTOs.push(new ChatDTO(user.id, user.name, userChat.lastMessage))
+      if (
+        chatDTOs.find((chatDTO) => chatDTO.userId === user.id) === undefined
+      ) {
+        chatDTOs.push(new ChatDTO(user.id, user.name, userChat.lastMessage))
+      }
     })
     return chatDTOs
   }
