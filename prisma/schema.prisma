@@ -63,7 +63,7 @@ model RentPlace {
   userId              Int                   @map("user_id")
   addressId           Int                   @unique @map("address_id")
   user                User                  @relation(name: "UserRentPlaces", fields: [userId], references: [id])
-  address             Address               @relation(fields: [addressId], references: [id])
+  address             Address               @relation(fields: [addressId], references: [id], onDelete: Cascade)
   specifications      Specification[]       @relation("RentPlaceSpecifications")
   rentPlacePhotos     RentPlacePhotos[]     @relation("RentPlacePhotos")
   UserFavorites       UserFavorites[]       @relation("RentPlaceFavorites")
@@ -79,7 +79,7 @@ model RentPlaceComplaints {
   userId      Int       @map("user_id")
   rentPlaceId Int       @map("rent_place_id")
   user        User      @relation(name: "RentPlaceComplaints", fields: [userId], references: [id])
-  rentPlace   RentPlace @relation(name: "RentPlaceComplaints", fields: [rentPlaceId], references: [id])
+  rentPlace   RentPlace @relation(name: "RentPlaceComplaints", fields: [rentPlaceId], references: [id], onDelete: Cascade)
 
   @@map("rent_place_complaints")
 }
@@ -89,7 +89,7 @@ model RentPlacePhotos {
   name        String    @db.VarChar(60)
   url         String?   @db.VarChar(255)
   rentPlaceId Int       @map("rent_place_id")
-  rentPlace   RentPlace @relation(name: "RentPlacePhotos", fields: [rentPlaceId], references: [id])
+  rentPlace   RentPlace @relation(name: "RentPlacePhotos", fields: [rentPlaceId], references: [id], onDelete: Cascade)
 
   @@map("rent_place_photos")
 }
@@ -98,7 +98,7 @@ model Specification {
   description String    @db.VarChar(300)
   amount      Int
   rentPlaceId Int       @map("rent_place_id")
-  rentPlace   RentPlace @relation(name: "RentPlaceSpecifications", fields: [rentPlaceId], references: [id])
+  rentPlace   RentPlace @relation(name: "RentPlaceSpecifications", fields: [rentPlaceId], references: [id], onDelete: Cascade)
 
   @@id([description, rentPlaceId])
   @@map("specifications")

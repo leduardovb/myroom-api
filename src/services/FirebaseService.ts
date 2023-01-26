@@ -5,6 +5,7 @@ import {
   ref,
   uploadString,
   getDownloadURL,
+  deleteObject,
   listAll,
 } from 'firebase/storage'
 import BucketResponseDTO from '../dtos/BucketResponseDTO'
@@ -39,6 +40,17 @@ export default class FirebaseService {
     console.debug(`Imagem salva com sucesso: ${path}`)
     const url = await this.getImageUrl(path, snapshot.ref.toString())
     return new BucketResponseDTO(snapshot, url)
+  }
+
+  async deleteFromBucket(path: string) {
+    console.debug(`Deletando imagem do bucket: ${path}`)
+    const storageRef = this.getStorageRef(path)
+    const { items } = await listAll(storageRef)
+
+    for (const item of items) {
+      await deleteObject(this.getStorageRef(`${path}/${item.name}`))
+    }
+    console.debug(`Imagems deletadas com sucesso: ${path}`)
   }
 
   private async getImageUrl(path: string, uri: string) {

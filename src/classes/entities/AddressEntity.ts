@@ -57,4 +57,15 @@ export default class AddressEntity {
       addressEntity.zipCode
     )
   }
+
+  overrideBasedOnDTO(data: AddressDTO) {
+    if (data.streetName !== undefined) this.streetName = data.streetName.trim()
+    if (data.buildingCode !== undefined)
+      this.buildingCode = data.buildingCode.trim()
+    if (data.complement !== undefined)
+      this.complement = data.complement ? data.complement.trim() : null
+    if (data.neighborhood !== undefined)
+      this.neighborhood = data.neighborhood.trim()
+    if (data.zipCode !== undefined) this.zipCode = data.zipCode
+  }
 }

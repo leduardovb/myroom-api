@@ -7,6 +7,7 @@ import {
   Get,
   Middleware,
   Post,
+  Put,
 } from '@overnightjs/core'
 import apiErrorValidator from '../middlewares/apiErrorValidator'
 import jwtMiddleware from '../middlewares/jwtMiddleware'
@@ -25,6 +26,8 @@ import PaginationSchema from '../joi/schemas/PaginationSchema'
 import DomainException from '../exceptions/DomainException'
 import { CreateComplaintDTO } from '../dtos/CreateComplaintDTO'
 import CreateComplaintSchema from '../joi/schemas/CreateComplaintSchema'
+import { UpdateRentPlaceSchema } from '../joi/schemas/UpdateRentPlaceSchema'
+import { UpdateRentPlaceDTO } from '../dtos/UpdateRentPlaceDTO'
 
 @Controller('rent-place')
 @ClassErrorMiddleware(apiErrorValidator)
@@ -205,6 +208,33 @@ export default class RentPlaceController {
             StatusCodes.OK,
             'Denúncia efetuada com sucesso',
             complaint
+          )
+        )
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  @Put()
+  @Middleware([jwtMiddleware, joiMiddleware(UpdateRentPlaceSchema.schema)])
+  public async update(
+    request: RequestBody<UpdateRentPlaceDTO>,
+    response: Response,
+    next: NextFunction
+  ) {
+    try {
+      const payload = request.payload!
+      const rentPlace = await this.rentPlaceService.update(
+        payload,
+        request.body.data!
+      )
+      response
+        .status(StatusCodes.OK)
+        .json(
+          new ResponseDTO(
+            StatusCodes.OK,
+            'Apartamento atualizado com sucesso',
+            rentPlace
           )
         )
     } catch (error) {

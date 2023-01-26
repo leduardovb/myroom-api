@@ -12,6 +12,9 @@ import PaginationDTO from '../classes/dtos/PaginationDTO'
 import { CreateComplaintDTO } from '../dtos/CreateComplaintDTO'
 import ComplaintEntity from '../classes/entities/ComplaintEntity'
 import ComplaintDTO from '../classes/dtos/ComplaintDTO'
+import { UpdateRentPlaceDTO } from '../dtos/UpdateRentPlaceDTO'
+import AddressEntity from '../classes/entities/AddressEntity'
+import RentPlacePhotoEntity from '../classes/entities/RentPlacePhotoEntity'
 
 export default class RentPlaceService {
   constructor(
@@ -67,7 +70,7 @@ export default class RentPlaceService {
     const savedRentPlaceEntity = RentPlaceEntity.fromEntity(newPlaceEntity)
 
     for (const image of data.photos) {
-      const bucketPath = `rent-place:${newPlaceEntity.id}/${image.name}`
+      const bucketPath = `${newPlaceEntity.id}/${image.name}`
       const snapshot = await this.firebaseService.uploadToBucket(
         bucketPath,
         image.dataUrl
@@ -147,6 +150,8 @@ export default class RentPlaceService {
   }
 
   public async single(id: number) {
+    console.debug(`Buscando imóvel: ${id}`)
+
     const rentPlaceEntity = await this.database.rentPlace.findUnique({
       where: { id },
       include: {
@@ -186,6 +191,7 @@ export default class RentPlaceService {
     await this.database.rentPlace.delete({
       where: { id },
     })
+    await this.firebaseService.deleteFromBucket(`rent-place:${id}`)
     return RentPlaceDTO.fromEntity(RentPlaceEntity.fromEntity(rentPlaceEntity))
   }
 
@@ -225,5 +231,133 @@ export default class RentPlaceService {
     const savedComplaintEntity = ComplaintEntity.fromEntity(newComplaintEntity)
     const complaintDTO = ComplaintDTO.fromEntity(savedComplaintEntity)
     return complaintDTO
+  }
+
+  public async update(
+    payload: PayloadDTO,
+    updateRentPlaceDTO: UpdateRentPlaceDTO
+  ) {
+    console.debug(`Atualizando imóvel: ${updateRentPlaceDTO.id}`)
+
+    const rentPlaceEntity = await this.database.rentPlace.findUnique({
+      where: { id: updateRentPlaceDTO.id },
+      include: {
+        specifications: true,
+      },
+    })
+    if (!rentPlaceEntity) throw DomainException.entityNotFound('Imóvel')
+    if (rentPlaceEntity.userId !== payload.userId)
+      throw DomainException.invalidState('Usuário não é dono do imóvel')
+    const addressEntity = await this.database.address.findUnique({
+      where: { id: updateRentPlaceDTO.address.id },
+    })
+    if (!addressEntity) throw DomainException.entityNotFound('Endereço')
+
+    const photoIds = updateRentPlaceDTO.photos
+      .filter((photo) => photo.id)
+      .map((photo) => photo.id!)
+    const photoEntites = await this.database.rentPlacePhotos.findMany({
+      where: { id: { in: photoIds } },
+    })
+    if (photoIds.length !== photoEntites.length)
+      throw DomainException.entityNotFound('Foto')
+
+    const newRentPlace = RentPlaceEntity.fromEntity(rentPlaceEntity)
+    newRentPlace.name = updateRentPlaceDTO.name
+    newRentPlace.description = updateRentPlaceDTO.description
+    newRentPlace.value = updateRentPlaceDTO.value
+    newRentPlace.type = updateRentPlaceDTO.type
+    newRentPlace.roomType = updateRentPlaceDTO.roomType
+
+    const newAddress = AddressEntity.fromEntity(addressEntity)
+
+    const specificationsToUpdate = updateRentPlaceDTO.specifications.filter(
+      (specification) =>
+        rentPlaceEntity.specifications.find(
+          (entity) => entity.description === specification.description
+        )
+    )
+    const specificationsToCreate = updateRentPlaceDTO.specifications.filter(
+      (specification) =>
+        !specificationsToUpdate.find(
+          (spec) => spec.description === specification.description
+        )
+    )
+    const photosToUpdate = updateRentPlaceDTO.photos.filter((photo) => photo.id)
+    const photosToCreate = updateRentPlaceDTO.photos.filter(
+      (photo) => !photo.id
+    )
+    const newPhotoEntities = new Array<RentPlacePhotoEntity>()
+    newAddress.overrideBasedOnDTO(updateRentPlaceDTO.address)
+
+    for (const photo of photosToCreate) {
+      const bucketPath = `${newRentPlace.id}/${photo.name}`
+      const snapshot = await this.firebaseService.uploadToBucket(
+        bucketPath,
+        photo.dataUrl
+      )
+      newPhotoEntities.push(
+        new RentPlacePhotoEntity(undefined, photo.name, snapshot.url)
+      )
+    }
+
+    const updatedRentPlaceEntity = await this.database.rentPlace.update({
+      data: {
+        ...newRentPlace,
+        id: undefined,
+        user: {
+          connect: {
+            id: payload.userId,
+          },
+        },
+        address: {
+          update: {
+            ...newAddress,
+            id: undefined,
+          },
+        },
+        rentPlacePhotos: {
+          deleteMany: {
+            id: { notIn: photoIds },
+          },
+          updateMany: photosToUpdate.map((photo) => ({
+            where: { id: photo.id! },
+            data: { url: photo.dataUrl, name: photo.name },
+          })),
+          createMany: {
+            data: newPhotoEntities,
+          },
+        },
+        specifications: {
+          deleteMany: {
+            description: {
+              notIn: updateRentPlaceDTO.specifications.map(
+                (specificationDTO) => specificationDTO.description
+              ),
+            },
+          },
+          updateMany: specificationsToUpdate.map((specification) => ({
+            where: {
+              description: specification.description,
+            },
+            data: {
+              amount: specification.amount,
+            },
+          })),
+          createMany: {
+            data: specificationsToCreate,
+          },
+        },
+      },
+      where: { id: newRentPlace.id },
+    })
+
+    console.debug(`Imóvel atualizado: ${updatedRentPlaceEntity.id}`)
+
+    const savedRentPlaceEntity = RentPlaceEntity.fromEntity(
+      updatedRentPlaceEntity
+    )
+    const rentPlaceDTO = RentPlaceDTO.fromEntity(savedRentPlaceEntity)
+    return rentPlaceDTO
   }
 }
