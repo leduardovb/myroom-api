@@ -23,6 +23,8 @@ import { StatusCodes } from 'http-status-codes'
 import joiPaginateMiddleware from '../middlewares/joiPaginateMiddleware'
 import PaginationSchema from '../joi/schemas/PaginationSchema'
 import DomainException from '../exceptions/DomainException'
+import { CreateComplaintDTO } from '../dtos/CreateComplaintDTO'
+import CreateComplaintSchema from '../joi/schemas/CreateComplaintSchema'
 
 @Controller('rent-place')
 @ClassErrorMiddleware(apiErrorValidator)
@@ -176,6 +178,33 @@ export default class RentPlaceController {
             StatusCodes.OK,
             'Apartamento excluído com sucesso',
             deletedRentPlace
+          )
+        )
+    } catch (error) {
+      next(error)
+    }
+  }
+
+  @Post('complaint')
+  @Middleware([jwtMiddleware, joiMiddleware(CreateComplaintSchema.schema)])
+  public async createComplaint(
+    request: RequestBody<CreateComplaintDTO>,
+    response: Response,
+    next: NextFunction
+  ) {
+    try {
+      const payload = request.payload!
+      const complaint = await this.rentPlaceService.createComplaint(
+        payload,
+        request.body.data!
+      )
+      response
+        .status(StatusCodes.OK)
+        .json(
+          new ResponseDTO(
+            StatusCodes.OK,
+            'Denúncia efetuada com sucesso',
+            complaint
           )
         )
     } catch (error) {

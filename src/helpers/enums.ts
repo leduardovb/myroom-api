@@ -25,7 +25,7 @@ export enum RentPlaceType {
 }
 
 export enum RentPlaceRoomType {
-  SINGLE = 'single',
+  PRIVATE = 'private',
   SHARED = 'shared',
   ALL = 'all',
 }
@@ -36,4 +36,12 @@ export enum RentPlaceSpecification {
   LIVING_ROOM = 'living_room',
   GARAGE = 'garage',
   LODGER = 'lodger',
+  LAUNDRY = 'laundry',
+}
+
+export enum ComplaintType {
+  INCORRET = 'incorrect',
+  UNTRUE = 'untrue',
+  GOLPE = 'golpe',
+  DUPLICATED = 'duplicated',
 }

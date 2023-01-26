@@ -9,6 +9,9 @@ import ViaCepService from './ViaCepService'
 import { Pagination } from '../interfaces/Pagination'
 import ResumedRentPlaceDTO from '../classes/dtos/ResumedRentPlaceDTO'
 import PaginationDTO from '../classes/dtos/PaginationDTO'
+import { CreateComplaintDTO } from '../dtos/CreateComplaintDTO'
+import ComplaintEntity from '../classes/entities/ComplaintEntity'
+import ComplaintDTO from '../classes/dtos/ComplaintDTO'
 
 export default class RentPlaceService {
   constructor(
@@ -184,5 +187,43 @@ export default class RentPlaceService {
       where: { id },
     })
     return RentPlaceDTO.fromEntity(RentPlaceEntity.fromEntity(rentPlaceEntity))
+  }
+
+  public async createComplaint(
+    payload: PayloadDTO,
+    createComplaintDTO: CreateComplaintDTO
+  ) {
+    console.debug(`Criando reclamação: ${createComplaintDTO.rentPlaceId}`)
+
+    const rentPlaceEntity = await this.database.rentPlace.findUnique({
+      where: { id: createComplaintDTO.rentPlaceId },
+    })
+    if (!rentPlaceEntity) throw DomainException.entityNotFound('Imóvel')
+
+    const userEntity = await this.database.user.findUnique({
+      where: { id: payload.userId },
+    })
+    if (!userEntity) throw DomainException.entityNotFound('Usuário')
+
+    const complaintEntity = ComplaintEntity.fromDTO(
+      userEntity.id,
+      createComplaintDTO
+    )
+    const newComplaintEntity = await this.database.rentPlaceComplaints.create({
+      data: {
+        ...complaintEntity,
+        id: undefined,
+      },
+      include: {
+        user: true,
+        rentPlace: true,
+      },
+    })
+
+    console.debug(`Nova reclamação criada: ${newComplaintEntity.id}`)
+
+    const savedComplaintEntity = ComplaintEntity.fromEntity(newComplaintEntity)
+    const complaintDTO = ComplaintDTO.fromEntity(savedComplaintEntity)
+    return complaintDTO
   }
 }

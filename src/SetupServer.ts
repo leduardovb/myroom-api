@@ -16,6 +16,7 @@ import NotificationsService from './services/NotificationsService'
 import AuthenticationService from './services/AuthenticationService'
 import UserService from './services/UserService'
 import { SocketIo } from './socket/SocketIo'
+import bodyParser from 'body-parser'
 
 export default class SetupServer extends Server {
   public httpServer!: http.Server
@@ -38,7 +39,11 @@ export default class SetupServer extends Server {
   private setupExpress(): void {
     this.app.use(helmet())
     this.app.use(compression())
-    this.app.use(express.json())
+    this.app.use(
+      express.json({
+        limit: '50mb',
+      })
+    )
     this.app.use(
       cors({
         origin: '*',

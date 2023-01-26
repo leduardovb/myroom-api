@@ -23,7 +23,7 @@ export default class CreateRentPlaceSchema extends DefaultSchema {
         .valid(
           RentPlaceRoomType.ALL,
           RentPlaceRoomType.SHARED,
-          RentPlaceRoomType.SINGLE
+          RentPlaceRoomType.PRIVATE
         ),
       value: Joi.number().required().greater(1),
       address: Joi.object({
@@ -54,7 +54,8 @@ export default class CreateRentPlaceSchema extends DefaultSchema {
                 RentPlaceSpecification.BEDROOM,
                 RentPlaceSpecification.GARAGE,
                 RentPlaceSpecification.LIVING_ROOM,
-                RentPlaceSpecification.LODGER
+                RentPlaceSpecification.LODGER,
+                RentPlaceSpecification.LAUNDRY
               ),
             amount: Joi.number().required().greater(0).max(10),
           })
