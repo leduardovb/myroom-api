@@ -15,12 +15,15 @@ import ComplaintDTO from '../classes/dtos/ComplaintDTO'
 import { UpdateRentPlaceDTO } from '../dtos/UpdateRentPlaceDTO'
 import AddressEntity from '../classes/entities/AddressEntity'
 import RentPlacePhotoEntity from '../classes/entities/RentPlacePhotoEntity'
+import EmailService from './EmailService'
+import { ComplaintType } from '../helpers/enums'
 
 export default class RentPlaceService {
   constructor(
     private database: PrismaClient,
     private firebaseService: FirebaseService,
-    private viaCepService: ViaCepService
+    private viaCepService: ViaCepService,
+    private emailService: EmailService
   ) {}
 
   public async create(payload: PayloadDTO, data: CreateRentPlaceDTO) {
@@ -95,7 +98,11 @@ export default class RentPlaceService {
   }
 
   public async list(pagination: Pagination) {
-    console.debug(`Listando imóveis: ${pagination.page}/${pagination.limit}`)
+    console.debug(
+      `Listando imóveis: ${pagination.page}/${pagination.limit} - ${
+        pagination.search || 'sem filtro'
+      }`
+    )
     const countRentPlaces = await this.database.rentPlace.count()
     const rentPlaceEntities = await this.database.rentPlace.findMany({
       skip: (Number(pagination.page) - 1) * Number(pagination.limit),
@@ -104,6 +111,13 @@ export default class RentPlaceService {
         address: true,
         rentPlacePhotos: true,
       },
+      where: pagination.search
+        ? {
+            name: {
+              contains: pagination.search,
+            },
+          }
+        : undefined,
     })
 
     const resumedRentPlaceDTOs = rentPlaceEntities.map((rentPlaceEntity) =>
@@ -203,6 +217,9 @@ export default class RentPlaceService {
 
     const rentPlaceEntity = await this.database.rentPlace.findUnique({
       where: { id: createComplaintDTO.rentPlaceId },
+      include: {
+        user: true,
+      },
     })
     if (!rentPlaceEntity) throw DomainException.entityNotFound('Imóvel')
 
@@ -210,6 +227,11 @@ export default class RentPlaceService {
       where: { id: payload.userId },
     })
     if (!userEntity) throw DomainException.entityNotFound('Usuário')
+
+    if (rentPlaceEntity.userId === userEntity.id)
+      throw DomainException.invalidState(
+        'Usuário não pode denunciar o próprio imóvel'
+      )
 
     const complaintEntity = ComplaintEntity.fromDTO(
       userEntity.id,
@@ -227,6 +249,24 @@ export default class RentPlaceService {
     })
 
     console.debug(`Nova reclamação criada: ${newComplaintEntity.id}`)
+    const typeReadable =
+      createComplaintDTO.type === ComplaintType.INCORRET
+        ? 'Anúncio incorreto'
+        : createComplaintDTO.type === ComplaintType.DUPLICATED
+        ? 'Anúncio duplicado'
+        : createComplaintDTO.type === ComplaintType.GOLPE
+        ? 'Golpe'
+        : createComplaintDTO.type === ComplaintType.UNTRUE
+        ? 'Informações falsas'
+        : 'Outro'
+
+    await this.emailService.sendComplaintEmail(
+      rentPlaceEntity.id,
+      typeReadable,
+      rentPlaceEntity.user.name,
+      userEntity.name,
+      createComplaintDTO.description
+    )
 
     const savedComplaintEntity = ComplaintEntity.fromEntity(newComplaintEntity)
     const complaintDTO = ComplaintDTO.fromEntity(savedComplaintEntity)

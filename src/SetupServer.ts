@@ -17,6 +17,7 @@ import AuthenticationService from './services/AuthenticationService'
 import UserService from './services/UserService'
 import { SocketIo } from './socket/SocketIo'
 import bodyParser from 'body-parser'
+import EmailService from './services/EmailService'
 
 export default class SetupServer extends Server {
   public httpServer!: http.Server
@@ -62,7 +63,8 @@ export default class SetupServer extends Server {
         new RentPlaceService(
           this.database,
           this.firebaseService,
-          new ViaCepService()
+          new ViaCepService(),
+          new EmailService()
         )
       ),
     ])
